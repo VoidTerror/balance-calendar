@@ -194,9 +194,9 @@ function renderMonth() {
 
     cells.push(`
       <button type="button" class="${classes.join(" ")}" data-day="${dayIndex}"
+        data-greg="${escapeHtml(fmtShort.format(dateOf(dayIndex)))}"
         title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}" ${aria}>
         <span class="cell-num">${number}</span>
-        <span class="cell-greg" aria-hidden="true">${escapeHtml(fmtShort.format(dateOf(dayIndex)))}</span>
       </button>`);
   }
 

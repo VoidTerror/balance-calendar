@@ -470,14 +470,23 @@ h1 {
   font-size: 21px;
   line-height: 1;
   font-variant-numeric: tabular-nums;
+  order: 0;
 }
 
-.cell-greg {
+/* Григорианская подпись рисуется через CSS, чтобы не мешать
+   доступному имени кнопки (скринридер читает aria-label). */
+.cell::before {
+  content: attr(data-greg);
+  order: 1;
   color: var(--muted);
   font-size: 9.5px;
   letter-spacing: 0.03em;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+.cell.blank::before {
+  content: none;
 }
 
 .cell.is-rest {
@@ -801,7 +810,7 @@ button.mini-cell:hover {
     font-size: 17px;
   }
 
-  .cell-greg {
+  .cell::before {
     font-size: 8.5px;
   }
 
@@ -838,8 +847,8 @@ button.mini-cell:hover {
     padding: 5px 2px;
   }
 
-  .cell-greg {
-    display: none;
+  .cell::before {
+    content: none;
   }
 
   .cell.is-extra .cell-num {
