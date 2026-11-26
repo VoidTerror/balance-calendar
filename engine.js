@@ -86,6 +86,19 @@ function validate(config) {
     if (!Array.isArray(config.leap.days) || config.leap.days.length === 0) {
       fail("leap.days должен содержать хотя бы один день");
     }
+    if (config.leap.exceptEvery !== undefined) {
+      if (!Number.isInteger(config.leap.exceptEvery) || config.leap.exceptEvery < 1) {
+        fail("leap.exceptEvery должен быть целым числом >= 1");
+      }
+      if (config.leap.exceptEvery % config.leap.every !== 0) {
+        fail("leap.exceptEvery должен быть кратен leap.every");
+      }
+      const leapOffset = config.leap.offset ?? 0;
+      const exceptOffset = config.leap.exceptOffset ?? 0;
+      if (mod(exceptOffset - leapOffset, config.leap.every) !== 0) {
+        fail("leap.exceptOffset и leap.offset должны быть сравнимы по модулю leap.every");
+      }
+    }
   }
   if (!config.epoch || !Number.isInteger(config.epoch.year)) {
     fail("epoch.year должен быть целым числом");
@@ -136,26 +149,40 @@ export function createCalendar(config) {
 
   const leapEvery = config.leap?.every ?? 0;
   const leapOffset = config.leap?.offset ?? 0;
+  const leapExcept = leapEvery > 0 ? (config.leap?.exceptEvery ?? 0) : 0;
+  const leapExceptOffset = config.leap?.exceptOffset ?? 0;
   const leapDays = (config.leap?.days ?? []).map((d) => ({ ...d }));
 
   const epochYear = config.epoch.year;
   const epochDayIndex = isoToDayIndex(config.epoch.gregorian);
 
-  /** Високосный ли год по правилу "каждый N-й год". */
+  /** Високосный ли год: каждый N-й, кроме кратных exceptEvery. */
   const isLeapYear = (year) =>
-    leapEvery > 0 && leapDays.length > 0 && mod(year + leapOffset, leapEvery) === 0;
+    leapEvery > 0 &&
+    leapDays.length > 0 &&
+    mod(year + leapOffset, leapEvery) === 0 &&
+    !(leapExcept > 0 && mod(year + leapExceptOffset, leapExcept) === 0);
 
   /** Полная длина года в днях. */
   const yearLength = (year) =>
     monthsDays + extraDays.length + (isLeapYear(year) ? leapDays.length : 0);
 
+  /** Сколько чисел, сравнимых с offset по модулю step, в [fromY, toY]. */
+  const congruentCount = (fromY, toY, step, offset) => {
+    const target = mod(-offset, step);
+    const first = fromY + mod(target - fromY, step);
+    if (first > toY) return 0;
+    return Math.floor((toY - first) / step) + 1;
+  };
+
   /** Сколько високосных лет в замкнутом промежутке [fromY, toY]. */
   const leapYearsBetween = (fromY, toY) => {
     if (toY < fromY || leapEvery <= 0 || leapDays.length === 0) return 0;
-    const target = mod(-leapOffset, leapEvery);
-    const first = fromY + mod(target - fromY, leapEvery);
-    if (first > toY) return 0;
-    return Math.floor((toY - first) / leapEvery) + 1;
+    let count = congruentCount(fromY, toY, leapEvery, leapOffset);
+    if (leapExcept > 0) {
+      count -= congruentCount(fromY, toY, leapExcept, leapExceptOffset);
+    }
+    return count;
   };
 
   /** Номер дня, с которого начинается указанный год. */

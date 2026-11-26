@@ -34,13 +34,15 @@
 
       <div class="controls">
         <div class="calendar-tools">
-          <button type="button" class="tool-btn" id="greg-btn" aria-pressed="false" aria-label="Показать даты по григорианскому календарю" data-i18n-title="gregTitle" data-icon="1"></button>
+          <button type="button" class="tool-btn" id="greg-btn" aria-pressed="true" aria-label="Даты по григорианскому календарю" data-i18n-title="gregTitle" data-icon="Г"></button>
+          <button type="button" class="tool-btn" id="leap-btn" aria-pressed="true" aria-label="Правило 128 лет" data-i18n-title="leapTitle" data-icon="128"></button>
           <button type="button" class="tool-btn" id="moon-btn" aria-label="Лунные фазы" data-i18n-title="moonTitle" data-icon="☾"></button>
         </div>
 
         <div class="lang-switch" role="group" aria-label="Язык" data-i18n-aria="langLabel">
           <button type="button" data-lang="ru" aria-pressed="true">РУС</button>
           <button type="button" data-lang="en" aria-pressed="false">ENG</button>
+          <button type="button" data-lang="slav" aria-pressed="false">СЛАВ</button>
         </div>
       </div>
     </header>
@@ -102,14 +104,14 @@
     <div class="modal-body">
       <div class="i18n" lang="ru">
         <p><strong>Уарзианский календарь (UC)</strong> — 8 месяцев по 45 дней, вечная 9-дневная неделя с ритмом 3-1-3-2 и 5 Дней Баланса вне недель (6 в високосный год). Год начинается в мартовское равноденствие; дни баланса идут под нулевым индексом месяца (00).</p>
-        <p>Месяцы: Унар, Бинар, Тернар, Квартер, Квинтер, Секстер, Септер, Октар; славянские аналоги — Пролетник, Травень, Крестень, Серпень, Вересень, Грудень, Студень, Лютень. Четыре астрономических квартала по 90 дней.</p>
-        <p>Високосный год добавляет шестой День Баланса. Сейчас в сборке — каждый 4-й год; правило 128 лет из спецификации (31 високосный год на 128) подключим отдельным шагом.</p>
+        <p>Нумерация как в спецификации: год 2001 начинается 20 марта 2000 и заканчивается 19 марта 2001. Три ряда названий: метрический русский (Унар…Октар), международный (Unar…Octar) и славянский (Пролетник…Лютень) — переключаются кнопками РУС / ENG / СЛАВ.</p>
+        <p>Високосный год добавляет шестой День Баланса. Кнопка «128» включает правило: каждый 4-й год, кроме кратных 128 (31 високосный год на 128 лет, средняя длина года 365,2421875 суток).</p>
         <p>Луна: 19-летний цикл Метона (235 лунных месяцев) — 19 листов, фазы накладываются поверх чисел; примерно раз в 219 лет нужна коррекция.</p>
       </div>
       <div class="i18n" lang="en">
         <p><strong>The Uarzian Calendar (UC)</strong> — 8 months of 45 days, an eternal 9-day week with a 3-1-3-2 rhythm and 5 Balance Days outside the weeks (6 in a leap year). The year starts at the March equinox; balance days use month index 00.</p>
-        <p>Months: Unar, Binar, Ternar, Quarter, Quinter, Sexter, Septer, Octar (Slavic: Proletnik, Traven, Kresten, Serpen, Veresen, Gruden, Studen, Lyuten). Four astronomical quarters of 90 days.</p>
-        <p>A leap year adds a sixth Balance Day. This build uses every 4th year; the 128-year rule from the spec (31 leap years per 128) is a separate step.</p>
+        <p>Year numbering follows the spec: year 2001 starts on 20 March 2000 and ends on 19 March 2001. Three naming rows — Russian metric (Унар…Октар), international (Unar…Octar) and Slavic (Пролетник…Лютень) — switch with РУС / ENG / СЛАВ.</p>
+        <p>A leap year adds a sixth Balance Day. The “128” button enables the rule: every 4th year except multiples of 128 (31 leap years per 128, mean year 365.2421875 days).</p>
         <p>Moon: 19-year Metonic cycle (235 lunar months) — 19 sheets with phases layered over the numbers; a correction is needed roughly every 219 years.</p>
       </div>
     </div>

@@ -3,15 +3,10 @@
  * описание календаря и переводы названий — в config.js.
  */
 
-import { CONFIG, localizedConfig } from "./config.js";
+import { localizedConfig } from "./config.js";
 import { createCalendar, civilToDayIndex, civilToISO } from "./engine.js";
 
 const DAY_MS = 86_400_000;
-
-const calendars = {
-  ru: createCalendar(localizedConfig("ru")),
-  en: createCalendar(localizedConfig("en")),
-};
 
 /* ── строки интерфейса ──────────────────────────────── */
 
@@ -29,7 +24,9 @@ const STRINGS = {
     infoTitle: "О календаре",
     convTitle: "Конвертер",
     moonTitle: "Лунные фазы",
-    gregTitle: "Показать даты по григорианскому календарю",
+    gregTitle: "Даты по григорианскому календарю",
+    gregIcon: "Г",
+    leapTitle: "Правило 128 лет",
     convIcon: "к",
     convLabel: "Григорианская дата",
     close: "Закрыть",
@@ -56,7 +53,9 @@ const STRINGS = {
     infoTitle: "About the calendar",
     convTitle: "Converter",
     moonTitle: "Moon phases",
-    gregTitle: "Show Gregorian dates",
+    gregTitle: "Gregorian dates",
+    gregIcon: "G",
+    leapTitle: "128-year rule",
     convIcon: "c",
     convLabel: "Gregorian date",
     close: "Close",
@@ -72,7 +71,7 @@ const STRINGS = {
   },
 };
 
-const t = (key) => STRINGS[state.lang][key] ?? key;
+const t = (key) => STRINGS[state.lang === "en" ? "en" : "ru"][key] ?? key;
 
 /* ── настройки и состояние ──────────────────────────── */
 
@@ -98,16 +97,28 @@ function localToday() {
   return civilToDayIndex(now.getFullYear(), now.getMonth() + 1, now.getDate());
 }
 
+const calendarCache = new Map();
+
+function getCalendar(lang, use128) {
+  const key = `${lang}:${use128 ? "128" : "4"}`;
+  if (!calendarCache.has(key)) {
+    calendarCache.set(key, createCalendar(localizedConfig(lang, use128)));
+  }
+  return calendarCache.get(key);
+}
+
+const storedLang = readStored("uarza.lang", "ru");
 const state = {
-  lang: readStored("uarza.lang", "ru") === "en" ? "en" : "ru",
-  showGreg: readStored("uarza.greg", "0") === "1",
+  lang: ["ru", "en", "slav"].includes(storedLang) ? storedLang : "ru",
+  showGreg: readStored("uarza.greg", "1") === "1",
+  use128: readStored("uarza.leap128", "1") === "1",
   year: 1,
   period: 0,
   selected: 0,
   today: localToday(),
 };
 
-let cal = calendars[state.lang];
+let cal = getCalendar(state.lang, state.use128);
 const EXTRA = cal.EXTRA_PERIOD;
 
 let fmtLong;
@@ -116,8 +127,7 @@ let fmtRangeYear;
 let fmtShort;
 
 function buildFormatters() {
-  const locale = state.lang === "en" ? "en-GB" : "ru-RU";
-  const make = (options) => new Intl.DateTimeFormat(locale, { timeZone: "UTC", ...options });
+  const locale = state.lang === "en" ? "en-GB" : "ru-RU";  const make = (options) => new Intl.DateTimeFormat(locale, { timeZone: "UTC", ...options });
 
   fmtLong = make({ weekday: "long", day: "numeric", month: "long", year: "numeric" });
   fmtRange = make({ day: "numeric", month: "long" });
@@ -179,11 +189,10 @@ const el = {
   yearRange: $("year-range"),
   yearGrid: $("year-grid"),
   gregBtn: $("greg-btn"),
+  leapBtn: $("leap-btn"),
   moonBtn: $("moon-btn"),
   infoBtn: $("info-btn"),
   convBtn: $("conv-btn"),
-  langRu: document.querySelector('.lang-switch button[data-lang="ru"]'),
-  langEn: document.querySelector('.lang-switch button[data-lang="en"]'),
   monthDialog: $("month-dialog"),
   balanceDialog: $("balance-dialog"),
   balanceTitle: $("balance-title"),
@@ -446,8 +455,10 @@ function render() {
 /* ── язык и настройки ───────────────────────────────── */
 
 function applyStatic() {
-  document.documentElement.lang = state.lang;
-  document.documentElement.dataset.lang = state.lang;
+  const uiLang = state.lang === "en" ? "en" : "ru";
+
+  document.documentElement.lang = uiLang;
+  document.documentElement.dataset.lang = uiLang;
 
   document.querySelectorAll("[data-i18n]").forEach((node) => {
     node.textContent = t(node.dataset.i18n);
@@ -471,14 +482,16 @@ function applyStatic() {
   if (description) description.setAttribute("content", t("metaDescription"));
 
   el.convBtn.dataset.icon = t("convIcon");
+  el.gregBtn.dataset.icon = t("gregIcon");
   el.gregBtn.setAttribute("aria-pressed", String(state.showGreg));
+  el.leapBtn.setAttribute("aria-pressed", String(state.use128));
 }
 
 function setLang(lang) {
-  if (lang !== "ru" && lang !== "en") return;
+  if (!["ru", "en", "slav"].includes(lang)) return;
 
   state.lang = lang;
-  cal = calendars[lang];
+  cal = getCalendar(state.lang, state.use128);
   buildFormatters();
   store("uarza.lang", lang);
   applyStatic();
@@ -490,6 +503,15 @@ function setGregorian(on) {
   state.showGreg = on;
   store("uarza.greg", on ? "1" : "0");
   el.gregBtn.setAttribute("aria-pressed", String(on));
+  render();
+}
+
+function setLeap128(on) {
+  state.use128 = on;
+  store("uarza.leap128", on ? "1" : "0");
+  cal = getCalendar(state.lang, state.use128);
+  syncTo(state.selected);
+  applyStatic();
   render();
 }
 
@@ -613,10 +635,12 @@ el.balanceList.addEventListener("click", (event) => {
   render();
 });
 
-el.langRu.addEventListener("click", () => setLang("ru"));
-el.langEn.addEventListener("click", () => setLang("en"));
+document.querySelectorAll(".lang-switch button").forEach((button) => {
+  button.addEventListener("click", () => setLang(button.dataset.lang));
+});
 
 el.gregBtn.addEventListener("click", () => setGregorian(!state.showGreg));
+el.leapBtn.addEventListener("click", () => setLeap128(!state.use128));
 el.infoBtn.addEventListener("click", () => openDialog(el.infoDialog));
 el.moonBtn.addEventListener("click", () => openDialog(el.moonDialog));
 

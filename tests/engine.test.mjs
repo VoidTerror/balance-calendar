@@ -2,16 +2,16 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { createCalendar, isoToDayIndex, civilToDayIndex, dayIndexToCivil } from "../engine.js";
-import { CONFIG } from "../config.js";
+import { CONFIG, localizedConfig } from "../config.js";
 
 const cal = createCalendar(CONFIG);
 
-test("эпоха: 1 Пролетник 1 года — это 2000-03-20", () => {
-  const epoch = cal.toDayIndex({ year: 1, monthIndex: 0, day: 1 });
+test("эпоха: 1 Пролетник 2001 года — это 2000-03-20", () => {
+  const epoch = cal.toDayIndex({ year: 2001, monthIndex: 0, day: 1 });
   assert.equal(epoch, isoToDayIndex("2000-03-20"));
 
   const date = cal.fromDayIndex(epoch);
-  assert.equal(date.year, 1);
+  assert.equal(date.year, 2001);
   assert.equal(date.monthIndex, 0);
   assert.equal(date.monthName, "Пролетник");
   assert.equal(date.day, 1);
@@ -29,6 +29,21 @@ test("восемь месяцев по 45 дней", () => {
     ["Пролетник", "Травень", "Крестень", "Серпень", "Вересень", "Грудень", "Студень", "Лютень"],
   );
   cal.months.forEach((month) => assert.equal(month.days, 45));
+});
+
+test("три ряда названий: русский метрический, международный и славянский", () => {
+  const ru = createCalendar(localizedConfig("ru"));
+  const en = createCalendar(localizedConfig("en"));
+  const slav = createCalendar(localizedConfig("slav"));
+
+  assert.equal(ru.months[0].name, "Унар");
+  assert.equal(ru.months[5].name, "Секстер");
+  assert.equal(en.months[0].name, "Unar");
+  assert.equal(en.months[5].name, "Sexter");
+  assert.equal(slav.months[0].name, "Пролетник");
+  assert.equal(slav.months[5].name, "Грудень");
+  assert.equal(en.weekdays[0], "Kon");
+  assert.equal(ru.weekdays[0], "Кон");
 });
 
 test("неделя из 9 дней, выходные — 1-й, 5-й и 9-й", () => {
@@ -52,36 +67,53 @@ test("неделя из 9 дней, выходные — 1-й, 5-й и 9-й", ()
 });
 
 test("длины годов: 365 дней, каждый 4-й — 366", () => {
-  assert.equal(cal.yearLength(1), 365);
-  assert.equal(cal.yearLength(2), 365);
-  assert.equal(cal.yearLength(3), 365);
-  assert.equal(cal.yearLength(4), 366);
-  assert.equal(cal.yearLength(8), 366);
-  assert.equal(cal.yearLength(27), 365);
-  assert.equal(cal.yearStartDay(5) - cal.yearStartDay(1), 1461);
+  assert.equal(cal.yearLength(2001), 365);
+  assert.equal(cal.yearLength(2002), 365);
+  assert.equal(cal.yearLength(2003), 365);
+  assert.equal(cal.yearLength(2004), 366);
+  assert.equal(cal.yearLength(2008), 366);
+  assert.equal(cal.yearLength(2027), 365);
+  assert.equal(cal.yearStartDay(2005) - cal.yearStartDay(2001), 1461);
+});
+
+test("правило 128 лет: 2048 — обычный, в 128-летии 31 високосный год", () => {
+  assert.equal(cal.isLeapYear(2044), true);
+  assert.equal(cal.isLeapYear(2048), false);
+  assert.equal(cal.isLeapYear(2052), true);
+
+  let leapCount = 0;
+  for (let year = 2001; year <= 2128; year += 1) {
+    if (cal.isLeapYear(year)) leapCount += 1;
+  }
+  assert.equal(leapCount, 31);
+  assert.equal(cal.yearStartDay(2129) - cal.yearStartDay(2001), 128 * 365 + 31);
+  assert.equal((cal.yearStartDay(2129) - cal.yearStartDay(2001)) / 128, 365.2421875);
+
+  const without128 = createCalendar(localizedConfig("ru", false));
+  assert.equal(without128.isLeapYear(2048), true);
+  assert.equal(without128.yearLength(2048), 366);
 });
 
 test("в конце года пять дней баланса, в високосный — шесть", () => {
-  assert.equal(cal.extraDaysFor(3).length, 5);
+  assert.equal(cal.extraDaysFor(2003).length, 5);
   assert.deepEqual(
-    cal.extraDaysFor(3).map((day) => day.name),
+    cal.extraDaysFor(2003).map((day) => day.name),
     ["День баланса I", "День баланса II", "День баланса III", "День баланса IV", "День баланса V"],
   );
 
-  assert.equal(cal.extraDaysFor(4).length, 6);
-  const extra = cal.extraEntriesFor(4);
+  assert.equal(cal.extraDaysFor(2004).length, 6);
+  const extra = cal.extraEntriesFor(2004);
   assert.equal(extra.at(-1).name, "День баланса VI");
-  assert.equal(extra.at(-1).dayIndex, cal.yearStartDay(5) - 1);
+  assert.equal(extra.at(-1).dayIndex, cal.yearStartDay(2005) - 1);
 
-  const lastMonthDay = cal.toDayIndex({ year: 1, monthIndex: 7, day: 45 });
+  const lastMonthDay = cal.toDayIndex({ year: 2001, monthIndex: 7, day: 45 });
   assert.equal(cal.fromDayIndex(lastMonthDay).monthName, "Лютень");
   assert.equal(cal.fromDayIndex(lastMonthDay + 1).isExtra, true);
 });
 
-test("сегодня: 26 ноября 2026 — 27 Грудня 27-го года", () => {
+test("сегодня: 26 ноября 2026 — 27 Секстер 2027 года", () => {
   const date = cal.fromGregorian({ year: 2026, month: 11, day: 26 });
-  assert.equal(date.year, 27);
-  assert.equal(date.monthName, "Грудень");
+  assert.equal(date.year, 2027);
   assert.equal(date.monthIndex, 5);
   assert.equal(date.day, 27);
   assert.equal(date.dayOfYear, 252);
@@ -93,6 +125,14 @@ test("сегодня: 26 ноября 2026 — 27 Грудня 27-го года"
   assert.equal(date.weekOfYear, 28);
   assert.equal(cal.weeksInYear, 40);
   assert.equal(date.isLeapYear, false);
+});
+
+test("нумерация как в спецификации: 07.08.1959 UC = 04.02.1959", () => {
+  const date = cal.fromGregorian({ year: 1959, month: 2, day: 4 });
+  assert.equal(date.year, 1959);
+  assert.equal(date.monthIndex, 7);
+  assert.equal(date.day, 7);
+  assert.equal(cal.toDayIndex({ year: 1959, monthIndex: 7, day: 7 }), isoToDayIndex("1959-02-04"));
 });
 
 test("перевод туда и обратно совпадает на широком диапазоне", () => {
@@ -111,14 +151,14 @@ test("перевод туда и обратно совпадает на широ
 
 test("даты до эпохи считаются корректно", () => {
   const before = cal.fromDayIndex(isoToDayIndex("2000-03-19"));
-  assert.equal(before.year, 0);
+  assert.equal(before.year, 2000);
   assert.equal(before.isExtra, true);
-  assert.equal(before.yearLength, 366); // год 0 делится на 4
+  assert.equal(before.yearLength, 366); // 2000 делится на 4
   assert.equal(cal.fromDayIndex(before.dayIndex).iso, "2000-03-19");
 });
 
 test("каждый месяц начинается с Кона, неделя идёт по дням месяца", () => {
-  for (let year = 1; year <= 12; year += 1) {
+  for (let year = 2001; year <= 2012; year += 1) {
     for (let monthIndex = 0; monthIndex < cal.monthCount; monthIndex += 1) {
       assert.equal(cal.fromDayIndex(cal.toDayIndex({ year, monthIndex, day: 1 })).weekdayName, "Кон");
 
@@ -132,7 +172,7 @@ test("каждый месяц начинается с Кона, неделя и�
 });
 
 test("дни баланса вне недели, следующий год снова начинается с Кона", () => {
-  const entries = cal.extraEntriesFor(27);
+  const entries = cal.extraEntriesFor(2027);
   assert.equal(entries.length, 5);
 
   for (const entry of entries) {
@@ -145,26 +185,31 @@ test("дни баланса вне недели, следующий год сн�
     assert.equal(date.weekInMonth, null);
   }
 
-  const nextYear = cal.fromDayIndex(cal.yearStartDay(28));
+  const nextYear = cal.fromDayIndex(cal.yearStartDay(2028));
   assert.equal(nextYear.monthIndex, 0);
   assert.equal(nextYear.day, 1);
   assert.equal(nextYear.weekdayName, "Кон");
   assert.equal(nextYear.weekOfYear, 1);
 
   // В високосном году шесть дней баланса — они тоже вне недели.
-  const leapExtras = cal.extraEntriesFor(28);
+  const leapExtras = cal.extraEntriesFor(2028);
   assert.equal(leapExtras.length, 6);
   assert.equal(cal.fromDayIndex(leapExtras.at(-1).dayIndex).weekdayName, null);
 });
 
-test("каждый год начинается 20 марта, пока совпадает високосный ритм", () => {
-  for (let year = 1; year <= 97; year += 1) {
+test("каждый год начинается 20 марта до первого пропуска в 2048", () => {
+  for (let year = 2001; year <= 2048; year += 1) {
     const start = cal.fromDayIndex(cal.yearStartDay(year));
     assert.equal(start.monthIndex, 0);
     assert.equal(start.day, 1);
     assert.equal(cal.gregorianOf(start.dayIndex).month, 3);
     assert.equal(cal.gregorianOf(start.dayIndex).day, 20);
   }
+
+  // После пропуска 2048-го високосного дня год 2049 начинается 19 марта.
+  const after = cal.gregorianOf(cal.yearStartDay(2049));
+  assert.equal(after.month, 3);
+  assert.equal(after.day, 19);
 });
 
 test("номер дня григорианского календаря согласован с Date.UTC", () => {

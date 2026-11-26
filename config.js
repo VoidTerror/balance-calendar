@@ -8,12 +8,13 @@
  *  • months — месяцы по порядку; days = сколько дней в месяце.
  *  • extra — дни вне месяцев в конце года (label — общее название).
  *  • leap — високосное правило: каждый leap.every-й год получает
- *    дополнительные дни leap.days; offset сдвигает фазу правила.
+ *    дополнительные дни leap.days; offset сдвигает фазу правила,
+ *    exceptEvery исключает годы, кратные этому числу (правило 128 лет).
  *  • epoch — точка отсчёта: какой григорианской дате соответствует
  *    первый день первого месяца epoch.year.
  *
- * Всё остальное (сетка, навигация, конвертация, подсветка «сегодня»)
- * считается автоматически.
+ * Нумерация годов — как в спецификации: год 2001 начинается
+ * 20 марта 2000 и заканчивается 19 марта 2001.
  */
 
 export const CONFIG = {
@@ -59,74 +60,116 @@ export const CONFIG = {
     ],
   },
 
-  // Каждый 4-й год длиннее на один день.
+  // Каждый 4-й год длиннее на один день, кроме кратных 128.
   leap: {
     every: 4,
     offset: 0,
+    exceptEvery: 128,
     days: [{ name: "День баланса VI" }],
   },
 
-  // 1 Пролетник 1 года = 20 марта 2000 (весеннее равноденствие).
+  // 1 Пролетник 2001 года = 20 марта 2000 (весеннее равноденствие).
   epoch: {
-    year: 1,
+    year: 2001,
     gregorian: "2000-03-20",
   },
 };
 
-/**
- * Английские названия: месяцы — международные имена из спецификации
- * (Unar…Octar), дни недели — транслитерация.
- */
-const EN = {
-  world: "Uarzian Calendar",
-  weekdays: [
-    "Kon",
-    "Delnik",
-    "Vtornik",
-    "Tretnik",
-    "Sereda",
-    "Chetverg",
-    "Pyatnitsa",
-    "Shestnitsa",
-    "Osmitza",
-  ],
-  months: [
-    "Unar",
-    "Binar",
-    "Ternar",
-    "Quarter",
-    "Quinter",
-    "Sexter",
-    "Septer",
-    "Octar",
-  ],
-  extraLabel: "Balance days",
-  extraDays: [
-    "Balance Day I",
-    "Balance Day II",
-    "Balance Day III",
-    "Balance Day IV",
-    "Balance Day V",
-  ],
-  leapDays: ["Balance Day VI"],
+/* ── названия для трёх режимов ──────────────────────── */
+
+const SLAVIC_WEEKDAYS = [
+  "Кон",
+  "Дельник",
+  "Вторник",
+  "Третник",
+  "Середа",
+  "Четверг",
+  "Пятница",
+  "Шестница",
+  "Осьмица",
+];
+
+const EN_WEEKDAYS = [
+  "Kon",
+  "Delnik",
+  "Vtornik",
+  "Tretnik",
+  "Sereda",
+  "Chetverg",
+  "Pyatnitsa",
+  "Shestnitsa",
+  "Osmitza",
+];
+
+const NAMES = {
+  // Русские метрические названия из спецификации.
+  ru: {
+    world: "Уарза",
+    weekdays: SLAVIC_WEEKDAYS,
+    months: ["Унар", "Бинар", "Тернар", "Квартер", "Квинтер", "Секстер", "Септер", "Октар"],
+    extraLabel: "Дни баланса",
+    extraDays: [
+      "День баланса I",
+      "День баланса II",
+      "День баланса III",
+      "День баланса IV",
+      "День баланса V",
+    ],
+    leapDays: ["День баланса VI"],
+  },
+
+  // Международные коды.
+  en: {
+    world: "Uarzian Calendar",
+    weekdays: EN_WEEKDAYS,
+    months: ["Unar", "Binar", "Ternar", "Quarter", "Quinter", "Sexter", "Septer", "Octar"],
+    extraLabel: "Balance days",
+    extraDays: [
+      "Balance Day I",
+      "Balance Day II",
+      "Balance Day III",
+      "Balance Day IV",
+      "Balance Day V",
+    ],
+    leapDays: ["Balance Day VI"],
+  },
+
+  // Славянский ряд.
+  slav: {
+    world: "Уарза",
+    weekdays: SLAVIC_WEEKDAYS,
+    months: ["Пролетник", "Травень", "Крестень", "Серпень", "Вересень", "Грудень", "Студень", "Лютень"],
+    extraLabel: "Дни баланса",
+    extraDays: [
+      "День баланса I",
+      "День баланса II",
+      "День баланса III",
+      "День баланса IV",
+      "День баланса V",
+    ],
+    leapDays: ["День баланса VI"],
+  },
 };
 
-/** Конфиг календаря для выбранного языка. */
-export function localizedConfig(lang) {
-  if (lang !== "en") return CONFIG;
+/** Конфиг календаря для выбранного ряда названий и правила 128 лет. */
+export function localizedConfig(mode, use128 = true) {
+  const names = NAMES[mode] ?? NAMES.ru;
+  const leap = { ...CONFIG.leap };
+
+  if (!use128) delete leap.exceptEvery;
 
   return {
     ...CONFIG,
-    world: EN.world,
-    weekdays: EN.weekdays.slice(),
-    months: CONFIG.months.map((month, index) => ({ ...month, name: EN.months[index] })),
+    world: names.world,
+    weekdays: names.weekdays.slice(),
+    months: CONFIG.months.map((month, index) => ({ ...month, name: names.months[index] })),
     extra: {
-      label: EN.extraLabel,
-      days: CONFIG.extra.days.map((day, index) => ({ name: EN.extraDays[index] })),
+      label: names.extraLabel,
+      days: names.extraDays.map((name) => ({ name })),
     },
     leap: {
-      ...CONFIG.leap,
-      days: CONFIG.leap.days.map((day, index) => ({ name: EN.leapDays[index] })),
+      ...leap,
+      days: names.leapDays.map((name) => ({ name })),
     },
   };
 }

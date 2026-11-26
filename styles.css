@@ -1042,7 +1042,7 @@ html[data-lang="en"] .i18n[lang="ru"] {
   }
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1040px) {
   .masthead {
     grid-template-columns: 1fr auto;
     gap: 10px 12px;
