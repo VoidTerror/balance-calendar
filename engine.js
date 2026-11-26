@@ -135,6 +135,16 @@ export function createCalendar(config) {
   }
   const monthsDays = monthOffsets[monthCount];
 
+  // Недели считаются внутри каждого месяца: 1-е число — всегда первый день недели.
+  // Смещение недель по месяцам нужно, чтобы номер недели в году шёл без разрывов.
+  const monthWeekOffsets = [0];
+  for (const month of months) {
+    monthWeekOffsets.push(
+      monthWeekOffsets[monthWeekOffsets.length - 1] + Math.ceil(month.days / weekLength),
+    );
+  }
+  const weeksInYear = monthWeekOffsets[monthCount];
+
   const extraDays = (config.extra?.days ?? []).map((d) => ({ ...d }));
   const extraLabel = config.extra?.label ?? "Дни вне года";
 
@@ -213,19 +223,14 @@ export function createCalendar(config) {
     }
 
     const dayOfYearIndex = dayIndex - yearStartDay(year);
-    const weekdayIndex = mod(dayIndex - epochDayIndex, weekLength);
     const gregorian = dayIndexToCivil(dayIndex);
     const length = yearLength(year);
     const leap = isLeapYear(year);
 
-    const base = {
+    const common = {
       dayIndex,
       year,
-      weekdayIndex,
-      weekdayName: weekdays[weekdayIndex],
-      isWeekend: isWeekend(weekdayIndex),
       dayOfYear: dayOfYearIndex + 1,
-      weekOfYear: Math.floor(dayOfYearIndex / weekLength) + 1,
       yearLength: length,
       daysLeftInYear: length - dayOfYearIndex - 1,
       isLeapYear: leap,
@@ -236,22 +241,34 @@ export function createCalendar(config) {
     if (dayOfYearIndex < monthsDays) {
       let monthIndex = 0;
       while (dayOfYearIndex >= monthOffsets[monthIndex + 1]) monthIndex += 1;
+      const day = dayOfYearIndex - monthOffsets[monthIndex] + 1;
+
+      // Неделя начинается заново в каждом месяце: 1-е число — Кон.
+      const weekdayIndex = mod(day - 1, weekLength);
+      const weekInMonth = Math.floor((day - 1) / weekLength) + 1;
+
       return {
-        ...base,
+        ...common,
         isExtra: false,
         monthIndex,
         monthName: months[monthIndex].name,
-        day: dayOfYearIndex - monthOffsets[monthIndex] + 1,
+        day,
         daysInMonth: months[monthIndex].days,
         extraIndex: null,
         extraName: null,
+        weekdayIndex,
+        weekdayName: weekdays[weekdayIndex],
+        isWeekend: isWeekend(weekdayIndex),
+        weekInMonth,
+        weekOfYear: monthWeekOffsets[monthIndex] + weekInMonth,
       };
     }
 
+    // Дни баланса стоят вне недели: у них нет дня недели.
     const list = extraDaysFor(year);
     const extraIndex = dayOfYearIndex - monthsDays;
     return {
-      ...base,
+      ...common,
       isExtra: true,
       monthIndex: null,
       monthName: null,
@@ -259,6 +276,11 @@ export function createCalendar(config) {
       daysInMonth: null,
       extraIndex,
       extraName: list[extraIndex].name,
+      weekdayIndex: null,
+      weekdayName: null,
+      isWeekend: false,
+      weekInMonth: null,
+      weekOfYear: null,
     };
   };
 
@@ -319,6 +341,8 @@ export function createCalendar(config) {
     epochYear,
     epochDayIndex,
     monthsDays,
+    weeksInYear,
+    monthWeekOffsets,
     isLeapYear,
     yearLength,
     yearStartDay,

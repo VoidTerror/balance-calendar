@@ -95,8 +95,12 @@ test("сегодня: 26 ноября 2026 — 27 Грудня 27-го года"
   assert.equal(date.day, 27);
   assert.equal(date.dayOfYear, 252);
   assert.equal(date.daysLeftInYear, 113);
-  assert.equal(date.weekdayName, "Кон");
+  assert.equal(date.weekdayName, "Осьмица");
+  assert.equal(date.weekdayIndex, 8);
   assert.equal(date.isWeekend, true);
+  assert.equal(date.weekInMonth, 3);
+  assert.equal(date.weekOfYear, 28);
+  assert.equal(cal.weeksInYear, 40);
   assert.equal(date.isLeapYear, false);
 });
 
@@ -122,12 +126,44 @@ test("даты до эпохи считаются корректно", () => {
   assert.equal(cal.fromDayIndex(before.dayIndex).iso, "2000-03-19");
 });
 
-test("день недели идёт непрерывно с периодом 9", () => {
-  const base = cal.fromDayIndex(0).weekdayIndex;
-  for (let i = 0; i < 300; i += 1) {
-    const date = cal.fromDayIndex(i);
-    assert.equal(date.weekdayIndex, (base + i) % 9);
+test("каждый месяц начинается с Кона, неделя идёт по дням месяца", () => {
+  for (let year = 1; year <= 12; year += 1) {
+    for (let monthIndex = 0; monthIndex < cal.monthCount; monthIndex += 1) {
+      assert.equal(cal.fromDayIndex(cal.toDayIndex({ year, monthIndex, day: 1 })).weekdayName, "Кон");
+
+      for (let day = 1; day <= cal.months[monthIndex].days; day += 1) {
+        const date = cal.fromDayIndex(cal.toDayIndex({ year, monthIndex, day }));
+        assert.equal(date.weekdayIndex, (day - 1) % 9);
+        assert.equal(date.weekInMonth, Math.floor((day - 1) / 9) + 1);
+      }
+    }
   }
+});
+
+test("дни баланса вне недели, следующий год снова начинается с Кона", () => {
+  const entries = cal.extraEntriesFor(27);
+  assert.equal(entries.length, 5);
+
+  for (const entry of entries) {
+    const date = cal.fromDayIndex(entry.dayIndex);
+    assert.equal(date.isExtra, true);
+    assert.equal(date.weekdayIndex, null);
+    assert.equal(date.weekdayName, null);
+    assert.equal(date.isWeekend, false);
+    assert.equal(date.weekOfYear, null);
+    assert.equal(date.weekInMonth, null);
+  }
+
+  const nextYear = cal.fromDayIndex(cal.yearStartDay(28));
+  assert.equal(nextYear.monthIndex, 0);
+  assert.equal(nextYear.day, 1);
+  assert.equal(nextYear.weekdayName, "Кон");
+  assert.equal(nextYear.weekOfYear, 1);
+
+  // В високосном году шесть дней баланса — они тоже вне недели.
+  const leapExtras = cal.extraEntriesFor(28);
+  assert.equal(leapExtras.length, 6);
+  assert.equal(cal.fromDayIndex(leapExtras.at(-1).dayIndex).weekdayName, null);
 });
 
 test("каждый год начинается 20 марта, пока совпадает високосный ритм", () => {

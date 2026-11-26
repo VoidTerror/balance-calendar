@@ -122,13 +122,13 @@ function renderHero() {
   el.heroMonth.classList.toggle("is-long", label.length > 10);
 
   el.heroYear.textContent = yearLabel(info.year);
-  el.heroWeekday.textContent = info.weekdayName;
+  el.heroWeekday.textContent = info.isExtra ? "вне недели" : info.weekdayName;
+  el.heroWeekday.classList.toggle("is-off", info.isExtra);
   el.heroGregorian.textContent = fmtLong.format(dateOf(info.dayIndex));
 
   el.heroDoy.textContent = `${info.dayOfYear} / ${info.yearLength}`;
 
-  const weeksInYear = Math.ceil(info.yearLength / cal.weekLength);
-  el.heroWeek.textContent = `${info.weekOfYear} / ${weeksInYear}`;
+  el.heroWeek.textContent = info.isExtra ? "—" : `${info.weekOfYear} / ${cal.weeksInYear}`;
 
   el.heroLeft.textContent = daysWord(info.daysLeftInYear);
 
@@ -157,20 +157,27 @@ function renderWeekdays() {
 }
 
 function cellTitle(info) {
-  const own = info.isExtra ? info.extraName : `${info.day} ${info.monthName}`;
-  return `${own}, ${yearLabel(info.year)} · ${info.weekdayName} · ${fmtLong.format(
+  if (info.isExtra) {
+    return `${info.extraName}, ${yearLabel(info.year)} · ${fmtLong.format(dateOf(info.dayIndex))}`;
+  }
+  return `${info.day} ${info.monthName}, ${yearLabel(info.year)} · ${info.weekdayName} · ${fmtLong.format(
     dateOf(info.dayIndex),
   )}`;
 }
 
 function renderMonth() {
   const { year, period } = state;
+  const isBalance = period === EXTRA;
   const name = cal.periodName(period);
   el.periodTitle.textContent = `${name} · ${yearLabel(year)}`;
 
+  // Дни баланса вне недели: у них нет ни заголовков дней, ни колонок.
+  el.weekdays.hidden = isBalance;
+  el.days.classList.toggle("is-balance", isBalance);
+
   const start = cal.periodStart(year, period);
   const count = cal.periodLength(year, period);
-  const blanks = cal.fromDayIndex(start).weekdayIndex;
+  const blanks = isBalance ? 0 : cal.fromDayIndex(start).weekdayIndex;
 
   const cells = [];
   for (let i = 0; i < blanks; i += 1) {
@@ -515,7 +522,8 @@ function updateConverter() {
     month: Number(match[2]),
     day: Number(match[3]),
   });
-  el.convOut.textContent = `${formatCustom(info)} · ${info.weekdayName}`;
+  const weekday = info.isExtra ? "вне недели" : info.weekdayName;
+  el.convOut.textContent = `${formatCustom(info)} · ${weekday}`;
 }
 
 el.conv.addEventListener("input", updateConverter);
