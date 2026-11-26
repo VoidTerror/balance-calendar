@@ -314,12 +314,15 @@ h1 {
   appearance: none;
   border: 0;
   background: none;
-  padding: 0;
+  padding: 6px 4px;
+  margin: -6px -4px;
   color: var(--gold);
   font: inherit;
   font-size: 12px;
   cursor: pointer;
-  border-bottom: 1px dotted rgba(216, 180, 98, 0.5);
+  border: 0;
+  text-decoration: underline dotted rgba(216, 180, 98, 0.5);
+  text-underline-offset: 3px;
 }
 
 .link:hover {
@@ -623,7 +626,8 @@ h1 {
 
 .quarter-link {
   appearance: none;
-  padding: 0;
+  padding: 6px 2px;
+  margin: -6px -2px;
   border: 0;
   background: none;
   color: inherit;
@@ -672,6 +676,7 @@ h1 {
   flex-wrap: wrap;
   width: 100%;
   min-width: 0;
+  min-height: 24px;
   margin: 0 0 8px;
   padding: 0;
   border: 0;
@@ -765,6 +770,9 @@ button.mini-cell:hover {
 
 .mini-extra button {
   appearance: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
   padding: 3px 7px;
   border: 1px solid rgba(154, 166, 255, 0.3);
   border-radius: 999px;
