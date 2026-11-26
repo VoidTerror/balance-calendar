@@ -495,7 +495,7 @@ function init() {
 
   el.footnote.textContent =
     `${cal.world}. Точка отсчёта: 1 ${cal.months[0].name} ${cal.config.epoch.year} года = ` +
-    `${fmtLong.format(dateOf(cal.epochDayIndex))}. Дни вне месяцев: ${cal.extraLabel}. ` +
+    `${fmtLong.format(dateOf(cal.epochDayIndex))} Дни вне месяцев: ${cal.extraLabel}. ` +
     `Время местное. Стрелки ← → листают месяцы, ↑ ↓ — годы, T — сегодня.`;
 
   el.conv.value = civilToISO(cal.gregorianOf(state.today));
