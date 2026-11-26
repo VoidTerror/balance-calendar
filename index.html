@@ -16,8 +16,10 @@
     <header class="masthead">
       <div class="brand">
         <span class="sigil" aria-hidden="true">✦</span>
-        <div>
-          <h1>Календарь Уарза</h1>
+        <h1 id="app-title" data-i18n="appTitle">Календарь Уарза</h1>
+        <div class="brand-tools">
+          <button type="button" class="tool-btn" id="info-btn" aria-label="О календаре" data-i18n-title="infoTitle">i</button>
+          <button type="button" class="tool-btn" id="conv-btn" aria-label="Конвертер" data-i18n-title="convTitle" data-i18n="convIcon">к</button>
         </div>
       </div>
 
@@ -27,26 +29,38 @@
         <span class="today-month" id="hero-month">—</span>
         <span class="today-weekday" id="hero-weekday">—</span>
         <span class="today-gregorian" id="hero-gregorian">—</span>
-        <button type="button" class="link" id="back-today" hidden>вернуться к сегодня</button>
+        <button type="button" class="link" id="back-today" hidden data-i18n="backToToday">вернуться к сегодня</button>
       </section>
 
-      <div class="view-switch" role="tablist" aria-label="Вид календаря">
-        <button type="button" role="tab" data-view="year" aria-selected="true">Год</button>
-        <button type="button" role="tab" data-view="month" aria-selected="false">Месяц</button>
+      <div class="controls">
+        <div class="calendar-tools">
+          <button type="button" class="tool-btn" id="greg-btn" aria-pressed="false" aria-label="Показать даты по григорианскому календарю" data-i18n-title="gregTitle">1</button>
+          <button type="button" class="tool-btn" id="moon-btn" aria-label="Лунные фазы" data-i18n-title="moonTitle">☾</button>
+        </div>
+
+        <div class="view-switch" role="tablist" aria-label="Вид календаря" data-i18n-aria="viewSwitchLabel">
+          <button type="button" role="tab" data-view="year" aria-selected="true" data-i18n="viewYear">Год</button>
+          <button type="button" role="tab" data-view="month" aria-selected="false" data-i18n="viewMonth">Месяц</button>
+        </div>
+
+        <div class="lang-switch" role="group" aria-label="Язык" data-i18n-aria="langLabel">
+          <button type="button" data-lang="ru" aria-pressed="true">РУС</button>
+          <button type="button" data-lang="en" aria-pressed="false">ENG</button>
+        </div>
       </div>
     </header>
 
     <main>
-      <section class="panel" id="panel-month" aria-label="Месяц">
+      <section class="panel" id="panel-month" aria-label="Месяц" data-i18n-aria="monthPanelLabel">
         <div class="panel-head">
           <div class="nav">
-            <button type="button" class="nav-btn" id="prev-year" aria-label="Предыдущий год"><span aria-hidden="true">«</span></button>
-            <button type="button" class="nav-btn" id="prev-period" aria-label="Предыдущий месяц"><span aria-hidden="true">‹</span></button>
+            <button type="button" class="nav-btn" id="prev-year" aria-label="Предыдущий год" data-i18n-aria="prevYear"><span aria-hidden="true">«</span></button>
+            <button type="button" class="nav-btn" id="prev-period" aria-label="Предыдущий месяц" data-i18n-aria="prevMonth"><span aria-hidden="true">‹</span></button>
           </div>
           <h2 id="period-title">—</h2>
           <div class="nav">
-            <button type="button" class="nav-btn" id="next-period" aria-label="Следующий месяц"><span aria-hidden="true">›</span></button>
-            <button type="button" class="nav-btn" id="next-year" aria-label="Следующий год"><span aria-hidden="true">»</span></button>
+            <button type="button" class="nav-btn" id="next-period" aria-label="Следующий месяц" data-i18n-aria="nextMonth"><span aria-hidden="true">›</span></button>
+            <button type="button" class="nav-btn" id="next-year" aria-label="Следующий год" data-i18n-aria="nextYear"><span aria-hidden="true">»</span></button>
           </div>
         </div>
 
@@ -55,23 +69,84 @@
         <p class="period-note" id="period-note"></p>
       </section>
 
-      <section class="panel year-panel" id="panel-year" aria-label="Год" hidden>
+      <section class="panel year-panel" id="panel-year" aria-label="Год" data-i18n-aria="yearPanelLabel" hidden>
         <div class="panel-head">
           <div class="nav">
-            <button type="button" class="nav-btn" id="year-prev" aria-label="Предыдущий год"><span aria-hidden="true">«</span></button>
+            <button type="button" class="nav-btn" id="year-prev" aria-label="Предыдущий год" data-i18n-aria="prevYear"><span aria-hidden="true">«</span></button>
           </div>
           <div class="year-heading">
             <h2 id="year-title">—</h2>
             <p class="year-range" id="year-range"></p>
           </div>
           <div class="nav">
-            <button type="button" class="nav-btn" id="year-next" aria-label="Следующий год"><span aria-hidden="true">»</span></button>
+            <button type="button" class="nav-btn" id="year-next" aria-label="Следующий год" data-i18n-aria="nextYear"><span aria-hidden="true">»</span></button>
           </div>
         </div>
         <div class="year-grid" id="year-grid"></div>
       </section>
     </main>
   </div>
+
+  <dialog class="modal" id="info-dialog" aria-labelledby="info-title">
+    <div class="modal-head">
+      <h2 id="info-title" data-i18n="infoTitle">О календаре</h2>
+      <button type="button" class="modal-close" data-close aria-label="Закрыть" data-i18n-aria="close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="i18n" lang="ru">
+        <p>Солнечная сетка неподвижна: 8 месяцев по 45 дней, 9-дневная неделя и 5 дней баланса вне недель (6 в високосный год). Каждый месяц начинается с Кона, а 9-й день — Осьмица.</p>
+        <p>Поверх чисел можно накладывать фазы Луны вторым слоем: каждые 19 солнечных лет Луна совершает 235 оборотов (цикл Метона), поэтому набор из 19 листов повторяется. Примерно раз в 219 лет нужна коррекция.</p>
+        <p>Точка отсчёта: 1 Пролетник 1 года = 20 марта 2000. Григорианская дата показана рядом с каждой датой. Сезон — два месяца.</p>
+      </div>
+      <div class="i18n" lang="en">
+        <p>The solar grid is fixed: 8 months of 45 days, a 9-day week and 5 balance days outside the weeks (6 in a leap year). Every month starts on Kon, and the 9th day is Osmitza.</p>
+        <p>Lunar phases can be layered over the numbers: every 19 solar years the Moon completes 235 cycles (Metonic cycle), so a set of 19 sheets repeats. Roughly every 219 years a correction is needed.</p>
+        <p>Epoch: 1 Proletnik of year 1 = 20 March 2000. The Gregorian date is shown next to every date. A season is two months.</p>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="modal" id="conv-dialog" aria-labelledby="conv-title">
+    <div class="modal-head">
+      <h2 id="conv-title" data-i18n="convTitle">Конвертер</h2>
+      <button type="button" class="modal-close" data-close aria-label="Закрыть" data-i18n-aria="close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="conv-row">
+        <label for="conv" data-i18n="convLabel">Григорианская дата</label>
+        <input type="date" id="conv">
+        <span class="conv-arrow" aria-hidden="true">→</span>
+        <output id="conv-out" for="conv">—</output>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog class="modal" id="moon-dialog" aria-labelledby="moon-title">
+    <div class="modal-head">
+      <h2 id="moon-title" data-i18n="moonTitle">Лунные фазы</h2>
+      <button type="button" class="modal-close" data-close aria-label="Закрыть" data-i18n-aria="close">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="i18n" lang="ru">
+        <p>Пока в разработке. По заметкам о лунном календаре:</p>
+        <ul>
+          <li>солнечная сетка 8 × 45 остаётся неподвижной, фазы Луны накладываются поверх чисел;</li>
+          <li>19 солнечных лет = 235 лунных месяцев (цикл Метона), поэтому хватает 19 листов;</li>
+          <li>для каждого листа нужно задать новолуния, полумесяцы и полнолуния.</li>
+        </ul>
+        <p>Чтобы сделать слой, осталось договориться о длине лунного месяца, сдвиге фаз по годам и виде значка.</p>
+      </div>
+      <div class="i18n" lang="en">
+        <p>Work in progress. From the lunar-calendar notes:</p>
+        <ul>
+          <li>the 8 × 45 solar grid stays fixed, Moon phases are layered over the numbers;</li>
+          <li>19 solar years = 235 lunar months (Metonic cycle), so 19 sheets are enough;</li>
+          <li>each sheet needs its new moons, quarter moons and full moons.</li>
+        </ul>
+        <p>To build the layer, we still need to agree on the lunar month length, the phase shift per year and the icon style.</p>
+      </div>
+    </div>
+  </dialog>
 
   <script type="module" src="app.js"></script>
 </body>

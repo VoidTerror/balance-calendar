@@ -72,3 +72,61 @@ export const CONFIG = {
     gregorian: "2000-03-20",
   },
 };
+
+/**
+ * Английские названия. В PDF их не было, поэтому это транслитерация —
+ * правьте свободно, структура календаря от этого не зависит.
+ */
+const EN = {
+  world: "Uarza",
+  weekdays: [
+    "Kon",
+    "Delnik",
+    "Vtornik",
+    "Tretnik",
+    "Sereda",
+    "Chetverg",
+    "Pyatnitsa",
+    "Shestnitsa",
+    "Osmitza",
+  ],
+  months: [
+    "Proletnik",
+    "Traven",
+    "Kresten",
+    "Serpen",
+    "Veresen",
+    "Gruden",
+    "Studen",
+    "Lyuten",
+  ],
+  extraLabel: "Balance days",
+  extraDays: [
+    "Balance Day I",
+    "Balance Day II",
+    "Balance Day III",
+    "Balance Day IV",
+    "Balance Day V",
+  ],
+  leapDays: ["Balance Day VI"],
+};
+
+/** Конфиг календаря для выбранного языка. */
+export function localizedConfig(lang) {
+  if (lang !== "en") return CONFIG;
+
+  return {
+    ...CONFIG,
+    world: EN.world,
+    weekdays: EN.weekdays.slice(),
+    months: CONFIG.months.map((month, index) => ({ ...month, name: EN.months[index] })),
+    extra: {
+      label: EN.extraLabel,
+      days: CONFIG.extra.days.map((day, index) => ({ name: EN.extraDays[index] })),
+    },
+    leap: {
+      ...CONFIG.leap,
+      days: CONFIG.leap.days.map((day, index) => ({ name: EN.leapDays[index] })),
+    },
+  };
+}

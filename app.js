@@ -1,24 +1,134 @@
 /**
  * Интерфейс календаря. Вся календарная математика — в engine.js,
- * описание календаря — в config.js. Здесь только DOM и форматирование.
+ * описание календаря и переводы названий — в config.js.
  */
 
-import { CONFIG } from "./config.js";
-import { createCalendar, civilToDayIndex } from "./engine.js";
+import { CONFIG, localizedConfig } from "./config.js";
+import { createCalendar, civilToDayIndex, civilToISO } from "./engine.js";
 
-const cal = createCalendar(CONFIG);
-const EXTRA = cal.EXTRA_PERIOD;
 const DAY_MS = 86_400_000;
 
+const calendars = {
+  ru: createCalendar(localizedConfig("ru")),
+  en: createCalendar(localizedConfig("en")),
+};
+
+/* ── строки интерфейса ──────────────────────────────── */
+
+const STRINGS = {
+  ru: {
+    appTitle: "Календарь Уарза",
+    docTitle: "Календарь",
+    today: "Сегодня",
+    selected: "Выбрано",
+    outsideWeek: "вне недели",
+    backToToday: "вернуться к сегодня",
+    viewYear: "Год",
+    viewMonth: "Месяц",
+    viewSwitchLabel: "Вид календаря",
+    langLabel: "Язык",
+    infoTitle: "О календаре",
+    convTitle: "Конвертер",
+    moonTitle: "Лунные фазы",
+    gregTitle: "Показать даты по григорианскому календарю",
+    convIcon: "к",
+    convLabel: "Григорианская дата",
+    close: "Закрыть",
+    prevYear: "Предыдущий год",
+    nextYear: "Следующий год",
+    prevMonth: "Предыдущий месяц",
+    nextMonth: "Следующий месяц",
+    monthPanelLabel: "Месяц",
+    yearPanelLabel: "Год",
+    betweenYears: "между годами",
+    metaDescription:
+      "Календарь Уарза: 8 месяцев по 45 дней, 9-дневная неделя, выходные 1/5/9 и дни баланса. Григорианская дата рядом с каждой датой.",
+  },
+  en: {
+    appTitle: "Uarza Calendar",
+    docTitle: "Calendar",
+    today: "Today",
+    selected: "Selected",
+    outsideWeek: "outside the week",
+    backToToday: "back to today",
+    viewYear: "Year",
+    viewMonth: "Month",
+    viewSwitchLabel: "Calendar view",
+    langLabel: "Language",
+    infoTitle: "About the calendar",
+    convTitle: "Converter",
+    moonTitle: "Moon phases",
+    gregTitle: "Show Gregorian dates",
+    convIcon: "c",
+    convLabel: "Gregorian date",
+    close: "Close",
+    prevYear: "Previous year",
+    nextYear: "Next year",
+    prevMonth: "Previous month",
+    nextMonth: "Next month",
+    monthPanelLabel: "Month",
+    yearPanelLabel: "Year",
+    betweenYears: "between years",
+    metaDescription:
+      "Uarza Calendar: 8 months of 45 days, a 9-day week, weekends 1/5/9 and balance days. Gregorian date next to every date.",
+  },
+};
+
+const t = (key) => STRINGS[state.lang][key] ?? key;
+
+/* ── настройки и состояние ──────────────────────────── */
+
+function readStored(key, fallback) {
+  try {
+    const value = localStorage.getItem(key);
+    return value ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function store(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* приватный режим — просто не запоминаем */
+  }
+}
+
+function localToday() {
+  const now = new Date();
+  return civilToDayIndex(now.getFullYear(), now.getMonth() + 1, now.getDate());
+}
+
+const state = {
+  lang: readStored("uarza.lang", "ru") === "en" ? "en" : "ru",
+  showGreg: readStored("uarza.greg", "0") === "1",
+  view: "year",
+  year: 1,
+  period: 0,
+  selected: 0,
+  today: localToday(),
+};
+
+let cal = calendars[state.lang];
+const EXTRA = cal.EXTRA_PERIOD;
+
+let fmtLong;
+let fmtRange;
+let fmtRangeYear;
+let fmtShort;
+
+function buildFormatters() {
+  const locale = state.lang === "en" ? "en-GB" : "ru-RU";
+  const make = (options) => new Intl.DateTimeFormat(locale, { timeZone: "UTC", ...options });
+
+  fmtLong = make({ weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  fmtRange = make({ day: "numeric", month: "long" });
+  fmtRangeYear = make({ day: "numeric", month: "long", year: "numeric" });
+  fmtShort = make({ day: "numeric", month: "short" });
+}
+
 /* ── форматирование ─────────────────────────────────── */
-
-const ruFormat = (options) =>
-  new Intl.DateTimeFormat("ru-RU", { timeZone: "UTC", ...options });
-
-const fmtLong = ruFormat({ weekday: "long", day: "numeric", month: "long", year: "numeric" });
-const fmtRange = ruFormat({ day: "numeric", month: "long" });
-const fmtRangeYear = ruFormat({ day: "numeric", month: "long", year: "numeric" });
-const fmtShort = ruFormat({ day: "numeric", month: "short" });
 
 function plural(n, forms) {
   const abs = Math.abs(n) % 100;
@@ -29,7 +139,12 @@ function plural(n, forms) {
   return forms[2];
 }
 
-const daysWord = (n) => `${n} ${plural(n, ["день", "дня", "дней"])}`;
+function daysWord(n) {
+  if (state.lang === "en") return `${n} ${n === 1 ? "day" : "days"}`;
+  return `${n} ${plural(n, ["день", "дня", "дней"])}`;
+}
+
+const yearLabel = (year) => (state.lang === "en" ? `Year ${year}` : `${year}-й год`);
 
 const escapeHtml = (value) =>
   String(value).replace(/[&<>"']/g, (ch) => ({
@@ -42,37 +157,17 @@ const escapeHtml = (value) =>
 
 const dateOf = (dayIndex) => new Date(dayIndex * DAY_MS);
 
-const yearLabel = (year) => `${year}-й год`;
-
-/* ── состояние ──────────────────────────────────────── */
-
-function localToday() {
-  const now = new Date();
-  return civilToDayIndex(now.getFullYear(), now.getMonth() + 1, now.getDate());
+function formatCustom(info) {
+  const head = info.isExtra ? info.extraName : `${info.day} ${info.monthName}`;
+  return `${head}, ${yearLabel(info.year)}`;
 }
-
-const state = {
-  view: "year",
-  year: 1,
-  period: 0,
-  selected: 0,
-  today: localToday(),
-};
-
-function syncTo(dayIndex) {
-  const info = cal.fromDayIndex(dayIndex);
-  state.year = info.year;
-  state.period = info.isExtra ? EXTRA : info.monthIndex;
-}
-
-syncTo(state.today);
-state.selected = state.today;
 
 /* ── элементы ───────────────────────────────────────── */
 
 const $ = (id) => document.getElementById(id);
 
 const el = {
+  appTitle: $("app-title"),
   heroKicker: $("hero-kicker"),
   heroDay: $("hero-day"),
   heroMonth: $("hero-month"),
@@ -88,17 +183,39 @@ const el = {
   yearTitle: $("year-title"),
   yearRange: $("year-range"),
   yearGrid: $("year-grid"),
+  gregBtn: $("greg-btn"),
+  moonBtn: $("moon-btn"),
+  infoBtn: $("info-btn"),
+  convBtn: $("conv-btn"),
+  langRu: document.querySelector('.lang-switch button[data-lang="ru"]'),
+  langEn: document.querySelector('.lang-switch button[data-lang="en"]'),
+  infoDialog: $("info-dialog"),
+  convDialog: $("conv-dialog"),
+  moonDialog: $("moon-dialog"),
+  conv: $("conv"),
+  convOut: $("conv-out"),
 };
 
-const weekdayInitials = cal.weekdays.map((name) => name.slice(0, 1).toUpperCase());
+const weekdayInitials = () => cal.weekdays.map((name) => name.slice(0, 1).toUpperCase());
 
-/* ── рендер: герой ──────────────────────────────────── */
+/* ── инициализация даты ─────────────────────────────── */
+
+function syncTo(dayIndex) {
+  const info = cal.fromDayIndex(dayIndex);
+  state.year = info.year;
+  state.period = info.isExtra ? EXTRA : info.monthIndex;
+}
+
+syncTo(state.today);
+state.selected = state.today;
+
+/* ── рендер: плашка «сегодня» ───────────────────────── */
 
 function renderHero() {
   const info = cal.fromDayIndex(state.selected);
   const isToday = state.selected === state.today;
 
-  el.heroKicker.textContent = isToday ? "Сегодня" : "Выбрано";
+  el.heroKicker.textContent = t(isToday ? "today" : "selected");
 
   el.heroDay.textContent = info.isExtra ? String(info.extraIndex + 1) : String(info.day);
 
@@ -106,10 +223,11 @@ function renderHero() {
   el.heroMonth.textContent = label;
   el.heroMonth.classList.toggle("is-long", label.length > 10);
 
-  el.heroWeekday.textContent = info.isExtra ? "вне недели" : info.weekdayName;
+  el.heroWeekday.textContent = info.isExtra ? t("outsideWeek") : info.weekdayName;
   el.heroWeekday.classList.toggle("is-off", info.isExtra);
   el.heroWeekday.classList.toggle("is-rest", !info.isExtra && info.isWeekend);
   el.heroGregorian.textContent = fmtLong.format(dateOf(info.dayIndex));
+  el.backToday.textContent = t("backToToday");
 
   el.backToday.hidden = isToday;
 }
@@ -117,11 +235,12 @@ function renderHero() {
 /* ── рендер: месячная сетка ─────────────────────────── */
 
 function renderWeekdays() {
+  const initials = weekdayInitials();
   el.weekdays.innerHTML = cal.weekdays
     .map(
       (name, index) => `
       <div class="wd${cal.isWeekend(index) ? " is-rest" : ""}" title="${escapeHtml(name)}">
-        <span class="wd-letter">${escapeHtml(weekdayInitials[index])}</span>
+        <span class="wd-letter">${escapeHtml(initials[index])}</span>
         <span class="wd-name">${escapeHtml(name)}</span>
       </div>`,
     )
@@ -143,7 +262,6 @@ function renderMonth() {
   const name = cal.periodName(period);
   el.periodTitle.textContent = `${name} · ${yearLabel(year)}`;
 
-  // Дни баланса вне недели: у них нет ни заголовков дней, ни колонок.
   el.weekdays.hidden = isBalance;
   el.days.classList.toggle("is-balance", isBalance);
 
@@ -187,23 +305,21 @@ function renderMonth() {
     ? `${fmtRange.format(dateOf(start))} — ${fmtRangeYear.format(dateOf(lastIndex))}`
     : `${fmtRangeYear.format(dateOf(start))} — ${fmtRangeYear.format(dateOf(lastIndex))}`;
 
-  if (period === EXTRA) {
-    el.periodNote.textContent = `${daysWord(count)} между годами · ${rangeText}`;
-    return;
-  }
-
-  el.periodNote.textContent = `${daysWord(count)} · ${rangeText}`;
+  el.periodNote.textContent = isBalance
+    ? `${daysWord(count)} ${t("betweenYears")} · ${rangeText}`
+    : `${daysWord(count)} · ${rangeText}`;
 }
 
 /* ── рендер: год ────────────────────────────────────── */
 
 function miniWeekdays() {
+  const initials = weekdayInitials();
   return cal.weekdays
     .map(
       (name, index) =>
         `<span class="mini-wd${cal.isWeekend(index) ? " is-rest" : ""}" title="${escapeHtml(
           name,
-        )}">${escapeHtml(weekdayInitials[index])}</span>`,
+        )}">${escapeHtml(initials[index])}</span>`,
     )
     .join("");
 }
@@ -213,6 +329,8 @@ function miniMonthCard(year, monthIndex) {
   const start = cal.periodStart(year, monthIndex);
   const count = cal.periodLength(year, monthIndex);
   const blanks = cal.fromDayIndex(start).weekdayIndex;
+  const todayInfo = cal.fromDayIndex(state.today);
+  const isCurrent = todayInfo.year === year && todayInfo.monthIndex === monthIndex;
 
   const cells = [];
   for (let i = 0; i < blanks; i += 1) {
@@ -227,6 +345,7 @@ function miniMonthCard(year, monthIndex) {
     if (dayIndex === state.selected) classes.push("is-selected");
     cells.push(
       `<button type="button" class="${classes.join(" ")}" data-day="${dayIndex}"
+        data-greg="${escapeHtml(fmtShort.format(dateOf(dayIndex)))}"
         title="${escapeHtml(cellTitle(info))}" aria-label="${escapeHtml(cellTitle(info))}">${info.day}</button>`,
     );
   }
@@ -236,7 +355,7 @@ function miniMonthCard(year, monthIndex) {
   )}`;
 
   return `
-    <article class="mini">
+    <article class="mini${isCurrent ? " is-current" : ""}">
       <button type="button" class="mini-title" data-month="${monthIndex}">
         <span class="mini-name">${escapeHtml(month.name)}</span>
         <span class="mini-range">${escapeHtml(span)}</span>
@@ -286,6 +405,7 @@ function renderYear() {
 
   const months = cal.months.map((_, monthIndex) => miniMonthCard(year, monthIndex)).join("");
 
+  el.yearGrid.classList.toggle("show-greg", state.showGreg);
   el.yearGrid.innerHTML = `
     <div class="year-months">${months}</div>
     ${balanceStrip(year)}`;
@@ -310,7 +430,63 @@ function render() {
   });
 
   const todayInfo = cal.fromDayIndex(state.today);
-  document.title = `${todayInfo.day} ${todayInfo.monthName} — Календарь ${cal.world}`;
+  document.title = `${todayInfo.day} ${todayInfo.monthName} — ${t("docTitle")}`;
+}
+
+/* ── язык и настройки ───────────────────────────────── */
+
+function applyStatic() {
+  document.documentElement.lang = state.lang;
+  document.documentElement.dataset.lang = state.lang;
+
+  document.querySelectorAll("[data-i18n]").forEach((node) => {
+    node.textContent = t(node.dataset.i18n);
+  });
+
+  document.querySelectorAll("[data-i18n-title]").forEach((node) => {
+    const text = t(node.dataset.i18nTitle);
+    node.title = text;
+    node.setAttribute("aria-label", text);
+  });
+
+  document.querySelectorAll("[data-i18n-aria]").forEach((node) => {
+    node.setAttribute("aria-label", t(node.dataset.i18nAria));
+  });
+
+  document.querySelectorAll(".lang-switch button").forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.lang === state.lang));
+  });
+
+  const description = document.querySelector('meta[name="description"]');
+  if (description) description.setAttribute("content", t("metaDescription"));
+
+  el.gregBtn.setAttribute("aria-pressed", String(state.showGreg));
+}
+
+function setLang(lang) {
+  if (lang !== "ru" && lang !== "en") return;
+
+  state.lang = lang;
+  cal = calendars[lang];
+  buildFormatters();
+  store("uarza.lang", lang);
+  applyStatic();
+  render();
+  if (el.convDialog.open) updateConverter();
+}
+
+function setGregorian(on) {
+  state.showGreg = on;
+  store("uarza.greg", on ? "1" : "0");
+  el.gregBtn.setAttribute("aria-pressed", String(on));
+  render();
+}
+
+/* ── диалоги ────────────────────────────────────────── */
+
+function openDialog(dialog) {
+  if (typeof dialog.showModal === "function") dialog.showModal();
+  else dialog.setAttribute("open", "");
 }
 
 /* ── навигация ──────────────────────────────────────── */
@@ -353,6 +529,23 @@ function selectDay(dayIndex) {
 function focusSelected() {
   const node = el.days.querySelector(`.cell[data-day="${state.selected}"]`);
   node?.focus({ preventScroll: true });
+}
+
+/* ── конвертер ──────────────────────────────────────── */
+
+function updateConverter() {
+  const match = /^(\d{4,})-(\d{2})-(\d{2})$/.exec(el.conv.value);
+  if (!match) {
+    el.convOut.textContent = "—";
+    return;
+  }
+  const info = cal.fromGregorian({
+    year: Number(match[1]),
+    month: Number(match[2]),
+    day: Number(match[3]),
+  });
+  const weekday = info.isExtra ? t("outsideWeek") : info.weekdayName;
+  el.convOut.textContent = `${formatCustom(info)} · ${weekday}`;
 }
 
 /* ── события ────────────────────────────────────────── */
@@ -401,7 +594,31 @@ el.yearGrid.addEventListener("click", (event) => {
   }
 });
 
+el.langRu.addEventListener("click", () => setLang("ru"));
+el.langEn.addEventListener("click", () => setLang("en"));
+
+el.gregBtn.addEventListener("click", () => setGregorian(!state.showGreg));
+el.infoBtn.addEventListener("click", () => openDialog(el.infoDialog));
+el.moonBtn.addEventListener("click", () => openDialog(el.moonDialog));
+
+el.convBtn.addEventListener("click", () => {
+  el.conv.value = civilToISO(cal.gregorianOf(state.today));
+  updateConverter();
+  openDialog(el.convDialog);
+});
+el.conv.addEventListener("input", updateConverter);
+
+document.querySelectorAll("dialog.modal").forEach((dialog) => {
+  dialog.addEventListener("click", (event) => {
+    if (event.target === dialog) dialog.close();
+  });
+  dialog.querySelectorAll("[data-close]").forEach((button) => {
+    button.addEventListener("click", () => dialog.close());
+  });
+});
+
 document.addEventListener("keydown", (event) => {
+  if (document.querySelector("dialog[open]")) return;
   if (event.target instanceof Element && event.target.matches("input, select, textarea")) return;
   if (event.metaKey || event.ctrlKey || event.altKey) return;
 
@@ -437,7 +654,7 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-/* ── часы и смена суток ─────────────────────────────── */
+/* ── смена суток ────────────────────────────────────── */
 
 function tick() {
   const today = localToday();
@@ -456,7 +673,8 @@ function tick() {
 
 function init() {
   document.documentElement.style.setProperty("--cols", String(cal.weekLength));
-
+  buildFormatters();
+  applyStatic();
   tick();
   render();
   setInterval(tick, 30000);
