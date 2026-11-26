@@ -57,7 +57,7 @@ function localToday() {
 }
 
 const state = {
-  view: "month",
+  view: "year",
   year: 1,
   period: 0,
   selected: 0,
@@ -262,18 +262,23 @@ function miniMonthCard(year, monthIndex) {
   const span = `${fmtShort.format(dateOf(start))} — ${fmtShort.format(
     dateOf(start + count - 1),
   )}`;
+  const quarter = cal.quarterName(monthIndex);
 
   return `
     <article class="mini">
-      <button type="button" class="mini-title" data-month="${monthIndex}">
-        ${escapeHtml(month.name)}<span>${escapeHtml(span)}</span>
-      </button>
+      <div class="mini-head">
+        <span class="mini-quarter">${escapeHtml(quarter ?? "")}</span>
+        <span class="mini-range">${escapeHtml(span)}</span>
+      </div>
+      <button type="button" class="mini-title" data-month="${monthIndex}">${escapeHtml(
+        month.name,
+      )}</button>
       <div class="mini-weekdays">${miniWeekdays()}</div>
       <div class="mini-days">${cells.join("")}</div>
     </article>`;
 }
 
-function extraCard(year) {
+function balanceStrip(year) {
   const entries = cal.extraEntriesFor(year);
   if (entries.length === 0) return "";
 
@@ -287,23 +292,18 @@ function extraCard(year) {
     })
     .join("");
 
+  const range = `${fmtShort.format(dateOf(entries[0].dayIndex))} — ${fmtShort.format(
+    dateOf(entries.at(-1).dayIndex),
+  )}`;
+
   return `
-    <section class="quarter">
-      <h3 class="quarter-title">
-        <button type="button" class="quarter-link" data-month="${EXTRA}">${escapeHtml(
-          cal.extraLabel,
-        )}</button>
-        <span class="quarter-count">${daysWord(entries.length)}</span>
-      </h3>
-      <div class="quarter-months">
-        <article class="mini">
-          <div class="mini-extra">${chips}</div>
-          <p class="extra-label">${escapeHtml(
-            fmtShort.format(dateOf(entries[0].dayIndex)),
-          )} — ${escapeHtml(fmtShort.format(dateOf(entries.at(-1).dayIndex)))}</p>
-        </article>
-      </div>
-    </section>`;
+    <div class="balance-strip">
+      <button type="button" class="balance-label" data-month="${EXTRA}">${escapeHtml(
+        cal.extraLabel,
+      )}</button>
+      <span class="balance-range">${daysWord(entries.length)} · ${escapeHtml(range)}</span>
+      <div class="balance-chips">${chips}</div>
+    </div>`;
 }
 
 function renderYear() {
@@ -316,35 +316,11 @@ function renderYear() {
     dateOf(yearEnd),
   )}`;
 
-  const sections = [];
+  const months = cal.months.map((_, monthIndex) => miniMonthCard(year, monthIndex)).join("");
 
-  if (cal.quarters.length > 0) {
-    cal.quarters.forEach((quarter, quarterIndex) => {
-      const cards = [];
-      for (let monthIndex = 0; monthIndex < cal.monthCount; monthIndex += 1) {
-        if (cal.quarterOfMonth(monthIndex) === quarterIndex) {
-          cards.push(miniMonthCard(year, monthIndex));
-        }
-      }
-      sections.push(`
-        <section class="quarter">
-          <h3 class="quarter-title">${escapeHtml(quarter)}</h3>
-          <div class="quarter-months">${cards.join("")}</div>
-        </section>`);
-    });
-  } else {
-    sections.push(`
-      <section class="quarter">
-        <div class="quarter-months">
-          ${cal.months.map((_, monthIndex) => miniMonthCard(year, monthIndex)).join("")}
-        </div>
-      </section>`);
-  }
-
-  const extra = extraCard(year);
-  if (extra) sections.push(extra);
-
-  el.yearGrid.innerHTML = sections.join("");
+  el.yearGrid.innerHTML = `
+    <div class="year-months">${months}</div>
+    ${balanceStrip(year)}`;
 }
 
 /* ── общий рендер ───────────────────────────────────── */
@@ -464,11 +440,13 @@ document.addEventListener("keydown", (event) => {
   switch (event.key) {
     case "ArrowLeft":
       event.preventDefault();
-      goPeriod(-1);
+      if (state.view === "year") goYear(-1);
+      else goPeriod(-1);
       break;
     case "ArrowRight":
       event.preventDefault();
-      goPeriod(1);
+      if (state.view === "year") goYear(1);
+      else goPeriod(1);
       break;
     case "ArrowUp":
       event.preventDefault();
@@ -542,9 +520,9 @@ function init() {
 
   el.footnote.textContent =
     `Точка отсчёта: 1 ${cal.months[0].name} ${cal.config.epoch.year} года = ` +
-    `${fmtLong.format(dateOf(cal.epochDayIndex))} ` +
-    `Выходные: ${cal.weekendDays.join(", ")}. Время местное. ` +
-    `Стрелки ← → листают месяцы, ↑ ↓ — годы, T — сегодня.`;
+    `${fmtRangeYear.format(dateOf(cal.epochDayIndex))} · ` +
+    `выходные: ${cal.weekendDays.join(", ")} · ` +
+    `стрелки — листать, T — сегодня.`;
 
   el.conv.value = civilToISO(cal.gregorianOf(state.today));
   updateConverter();
