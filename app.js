@@ -1,6 +1,6 @@
 /**
  * Интерфейс календаря. Вся календарная математика — в engine.js,
- * описание мира — в config.js. Здесь только DOM и форматирование.
+ * описание календаря — в config.js. Здесь только DOM и форматирование.
  */
 
 import { CONFIG } from "./config.js";
@@ -148,7 +148,7 @@ function renderWeekdays() {
   el.weekdays.innerHTML = cal.weekdays
     .map(
       (name, index) => `
-      <div class="wd${index === cal.weekLength - 1 ? " is-rest" : ""}" title="${escapeHtml(name)}">
+      <div class="wd${cal.isWeekend(index) ? " is-rest" : ""}" title="${escapeHtml(name)}">
         <span class="wd-letter">${escapeHtml(weekdayInitials[index])}</span>
         <span class="wd-name">${escapeHtml(name)}</span>
       </div>`,
@@ -157,9 +157,7 @@ function renderWeekdays() {
 }
 
 function cellTitle(info) {
-  const own = info.isExtra
-    ? info.extraName
-    : `${info.day} ${info.monthName}`;
+  const own = info.isExtra ? info.extraName : `${info.day} ${info.monthName}`;
   return `${own}, ${yearLabel(info.year)} · ${info.weekdayName} · ${fmtLong.format(
     dateOf(info.dayIndex),
   )}`;
@@ -184,7 +182,7 @@ function renderMonth() {
     const info = cal.fromDayIndex(dayIndex);
     const classes = ["cell"];
     if (info.isExtra) classes.push("is-extra");
-    if (info.weekdayIndex === cal.weekLength - 1) classes.push("is-rest");
+    if (info.isWeekend) classes.push("is-rest");
     if (dayIndex === state.today) classes.push("is-today");
     if (dayIndex === state.selected) classes.push("is-selected");
 
@@ -210,10 +208,13 @@ function renderMonth() {
     ? `${fmtRange.format(dateOf(start))} — ${fmtRangeYear.format(dateOf(lastIndex))}`
     : `${fmtRangeYear.format(dateOf(start))} — ${fmtRangeYear.format(dateOf(lastIndex))}`;
 
-  el.periodNote.textContent =
-    period === EXTRA
-      ? `${daysWord(count)} между годами · ${rangeText}`
-      : `${daysWord(count)} · ${rangeText}`;
+  if (period === EXTRA) {
+    el.periodNote.textContent = `${daysWord(count)} между годами · ${rangeText}`;
+    return;
+  }
+
+  const quarter = cal.quarterName(period);
+  el.periodNote.textContent = `${quarter ? `${quarter} · ` : ""}${daysWord(count)} · ${rangeText}`;
 }
 
 /* ── рендер: год ────────────────────────────────────── */
@@ -222,11 +223,80 @@ function miniWeekdays() {
   return cal.weekdays
     .map(
       (name, index) =>
-        `<span class="mini-wd${index === cal.weekLength - 1 ? " is-rest" : ""}" title="${escapeHtml(
+        `<span class="mini-wd${cal.isWeekend(index) ? " is-rest" : ""}" title="${escapeHtml(
           name,
         )}">${escapeHtml(weekdayInitials[index])}</span>`,
     )
     .join("");
+}
+
+function miniMonthCard(year, monthIndex) {
+  const month = cal.months[monthIndex];
+  const start = cal.periodStart(year, monthIndex);
+  const count = cal.periodLength(year, monthIndex);
+  const blanks = cal.fromDayIndex(start).weekdayIndex;
+
+  const cells = [];
+  for (let i = 0; i < blanks; i += 1) {
+    cells.push('<span class="mini-cell blank" aria-hidden="true"></span>');
+  }
+  for (let i = 0; i < count; i += 1) {
+    const dayIndex = start + i;
+    const info = cal.fromDayIndex(dayIndex);
+    const classes = ["mini-cell"];
+    if (dayIndex === state.today) classes.push("is-today");
+    if (dayIndex === state.selected) classes.push("is-selected");
+    cells.push(
+      `<button type="button" class="${classes.join(" ")}" data-day="${dayIndex}"
+        title="${escapeHtml(cellTitle(info))}" aria-label="${escapeHtml(cellTitle(info))}">${info.day}</button>`,
+    );
+  }
+
+  const span = `${fmtShort.format(dateOf(start))} — ${fmtShort.format(
+    dateOf(start + count - 1),
+  )}`;
+
+  return `
+    <article class="mini">
+      <button type="button" class="mini-title" data-month="${monthIndex}">
+        ${escapeHtml(month.name)}<span>${escapeHtml(span)}</span>
+      </button>
+      <div class="mini-weekdays">${miniWeekdays()}</div>
+      <div class="mini-days">${cells.join("")}</div>
+    </article>`;
+}
+
+function extraCard(year) {
+  const entries = cal.extraEntriesFor(year);
+  if (entries.length === 0) return "";
+
+  const chips = entries
+    .map((entry) => {
+      const classes = entry.dayIndex === state.today ? "is-today" : "";
+      return `<button type="button" class="${classes}" data-day="${entry.dayIndex}"
+        title="${escapeHtml(cellTitle(cal.fromDayIndex(entry.dayIndex)))}">${escapeHtml(
+          entry.name,
+        )}</button>`;
+    })
+    .join("");
+
+  return `
+    <section class="quarter">
+      <h3 class="quarter-title">
+        <button type="button" class="quarter-link" data-month="${EXTRA}">${escapeHtml(
+          cal.extraLabel,
+        )}</button>
+        <span class="quarter-count">${daysWord(entries.length)}</span>
+      </h3>
+      <div class="quarter-months">
+        <article class="mini">
+          <div class="mini-extra">${chips}</div>
+          <p class="extra-label">${escapeHtml(
+            fmtShort.format(dateOf(entries[0].dayIndex)),
+          )} — ${escapeHtml(fmtShort.format(dateOf(entries.at(-1).dayIndex)))}</p>
+        </article>
+      </div>
+    </section>`;
 }
 
 function renderYear() {
@@ -239,66 +309,35 @@ function renderYear() {
     dateOf(yearEnd),
   )}`;
 
-  const cards = cal.months.map((month, monthIndex) => {
-    const start = cal.periodStart(year, monthIndex);
-    const count = cal.periodLength(year, monthIndex);
-    const blanks = cal.fromDayIndex(start).weekdayIndex;
+  const sections = [];
 
-    const cells = [];
-    for (let i = 0; i < blanks; i += 1) {
-      cells.push('<span class="mini-cell blank" aria-hidden="true"></span>');
-    }
-    for (let i = 0; i < count; i += 1) {
-      const dayIndex = start + i;
-      const info = cal.fromDayIndex(dayIndex);
-      const classes = ["mini-cell"];
-      if (dayIndex === state.today) classes.push("is-today");
-      if (dayIndex === state.selected) classes.push("is-selected");
-      cells.push(
-        `<button type="button" class="${classes.join(" ")}" data-day="${dayIndex}"
-          title="${escapeHtml(cellTitle(info))}" aria-label="${escapeHtml(cellTitle(info))}">${info.day}</button>`,
-      );
-    }
-
-    const span = `${fmtShort.format(dateOf(start))} — ${fmtShort.format(
-      dateOf(start + count - 1),
-    )}`;
-
-    return `
-      <article class="mini">
-        <button type="button" class="mini-title" data-month="${monthIndex}">
-          ${escapeHtml(month.name)}<span>${escapeHtml(span)}</span>
-        </button>
-        <div class="mini-weekdays">${miniWeekdays()}</div>
-        <div class="mini-days">${cells.join("")}</div>
-      </article>`;
-  });
-
-  const extraEntries = cal.extraEntriesFor(year);
-  if (extraEntries.length > 0) {
-    const chips = extraEntries
-      .map((entry) => {
-        const classes = entry.dayIndex === state.today ? "is-today" : "";
-        return `<button type="button" class="${classes}" data-day="${entry.dayIndex}"
-          title="${escapeHtml(cellTitle(cal.fromDayIndex(entry.dayIndex)))}">${escapeHtml(
-            entry.name,
-          )}</button>`;
-      })
-      .join("");
-
-    cards.push(`
-      <article class="mini">
-        <button type="button" class="mini-title" data-month="${EXTRA}">
-          ${escapeHtml(cal.extraLabel)}<span>${daysWord(extraEntries.length)}</span>
-        </button>
-        <div class="mini-extra">${chips}</div>
-        <p class="extra-label">${escapeHtml(
-          fmtShort.format(dateOf(extraEntries[0].dayIndex)),
-        )} — ${escapeHtml(fmtShort.format(dateOf(extraEntries.at(-1).dayIndex)))}</p>
-      </article>`);
+  if (cal.quarters.length > 0) {
+    cal.quarters.forEach((quarter, quarterIndex) => {
+      const cards = [];
+      for (let monthIndex = 0; monthIndex < cal.monthCount; monthIndex += 1) {
+        if (cal.quarterOfMonth(monthIndex) === quarterIndex) {
+          cards.push(miniMonthCard(year, monthIndex));
+        }
+      }
+      sections.push(`
+        <section class="quarter">
+          <h3 class="quarter-title">${escapeHtml(quarter)}</h3>
+          <div class="quarter-months">${cards.join("")}</div>
+        </section>`);
+    });
+  } else {
+    sections.push(`
+      <section class="quarter">
+        <div class="quarter-months">
+          ${cal.months.map((_, monthIndex) => miniMonthCard(year, monthIndex)).join("")}
+        </div>
+      </section>`);
   }
 
-  el.yearGrid.innerHTML = cards.join("");
+  const extra = extraCard(year);
+  if (extra) sections.push(extra);
+
+  el.yearGrid.innerHTML = sections.join("");
 }
 
 /* ── общий рендер ───────────────────────────────────── */
@@ -320,7 +359,7 @@ function render() {
   });
 
   const todayInfo = cal.fromDayIndex(state.today);
-  document.title = `${todayInfo.day} ${todayInfo.monthName} — Календарь ${cal.world}`;
+  document.title = `${todayInfo.day} ${todayInfo.monthName} — Календарь`;
 }
 
 /* ── навигация ──────────────────────────────────────── */
@@ -487,16 +526,17 @@ function init() {
   document.documentElement.style.setProperty("--cols", String(cal.weekLength));
 
   const lengths = new Set();
-  const cycle = Math.max(cal.config.leap?.every ?? 0, 4);
+  const cycle = Math.max(cal.config.leap?.every ?? 1, 1);
   for (let year = 1; year <= cycle; year += 1) lengths.add(cal.yearLength(year));
   const lengthsText = [...lengths].sort((a, b) => a - b).join("/");
 
   el.tagline.textContent = `${cal.monthCount} месяцев · ${cal.weekLength} дней в неделе · ${lengthsText} дней в году`;
 
   el.footnote.textContent =
-    `${cal.world}. Точка отсчёта: 1 ${cal.months[0].name} ${cal.config.epoch.year} года = ` +
-    `${fmtLong.format(dateOf(cal.epochDayIndex))} Дни вне месяцев: ${cal.extraLabel}. ` +
-    `Время местное. Стрелки ← → листают месяцы, ↑ ↓ — годы, T — сегодня.`;
+    `Точка отсчёта: 1 ${cal.months[0].name} ${cal.config.epoch.year} года = ` +
+    `${fmtLong.format(dateOf(cal.epochDayIndex))} ` +
+    `Выходные: ${cal.weekendDays.join(", ")}. Время местное. ` +
+    `Стрелки ← → листают месяцы, ↑ ↓ — годы, T — сегодня.`;
 
   el.conv.value = civilToISO(cal.gregorianOf(state.today));
   updateConverter();

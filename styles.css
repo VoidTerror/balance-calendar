@@ -490,11 +490,12 @@ h1 {
 }
 
 .cell.is-rest {
-  background: rgba(13, 17, 28, 0.6);
+  background: rgba(154, 166, 255, 0.06);
+  border-color: rgba(154, 166, 255, 0.18);
 }
 
 .cell.is-rest .cell-num {
-  color: #c7cbe0;
+  color: #cfd5ff;
 }
 
 .cell.is-extra {
@@ -569,10 +570,71 @@ h1 {
 }
 
 .year-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
   margin-top: 22px;
+}
+
+.quarter {
+  min-width: 0;
+}
+
+.quarter-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 10px;
+  padding: 0 2px;
+  color: var(--gold);
+  font-family: var(--sans);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.quarter-title::after {
+  content: "";
+  order: 2;
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--line), transparent);
+}
+
+.quarter-link {
+  appearance: none;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.quarter-link:hover {
+  color: var(--gold-2);
+}
+
+.quarter-count {
+  order: 1;
+  color: var(--muted);
+  font-weight: 400;
+  letter-spacing: 0.08em;
+}
+
+.quarter-months {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.quarter-months .mini {
+  flex: 1 1 260px;
+  min-width: 0;
+  max-width: 430px;
 }
 
 .mini {
@@ -587,8 +649,10 @@ h1 {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 8px;
+  gap: 4px 8px;
+  flex-wrap: wrap;
   width: 100%;
+  min-width: 0;
   margin: 0 0 8px;
   padding: 0;
   border: 0;
@@ -630,7 +694,7 @@ h1 {
   text-transform: uppercase;
 }
 
-.mini-weekdays .mini-wd:last-child {
+.mini-weekdays .mini-wd.is-rest {
   color: rgba(154, 166, 255, 0.8);
 }
 
@@ -818,8 +882,7 @@ button.mini-cell:hover {
     font-size: 8.5px;
   }
 
-  .year-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  .quarter-months {
     gap: 10px;
   }
 }

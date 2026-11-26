@@ -1,7 +1,7 @@
 {
-  "name": "aerion-calendar",
+  "name": "balance-calendar",
   "version": "1.0.0",
-  "description": "Календарь вымышленного мира: 9 месяцев по 40 дней, 8-дневная неделя, дни безмолвия.",
+  "description": "Календарь: 8 месяцев по 45 дней, 9-дневная неделя, выходные 1/5/9 и дни баланса.",
   "type": "module",
   "private": true,
   "scripts": {

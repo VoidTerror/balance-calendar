@@ -55,8 +55,26 @@ function validate(config) {
   if (!Array.isArray(config.weekdays) || config.weekdays.length < 2) {
     fail("weekdays должен быть массивом минимум из двух названий дней недели");
   }
+  if (config.weekends !== undefined) {
+    if (!Array.isArray(config.weekends) || config.weekends.length === 0) {
+      fail("weekends должен быть непустым массивом номеров дней недели");
+    }
+    config.weekends.forEach((number) => {
+      if (!Number.isInteger(number) || number < 1 || number > config.weekdays.length) {
+        fail(`weekends: ${number} вне диапазона 1..${config.weekdays.length}`);
+      }
+    });
+  }
   if (!Array.isArray(config.months) || config.months.length === 0) {
     fail("months должен быть непустым массивом");
+  }
+  if (config.quarters !== undefined) {
+    if (!Array.isArray(config.quarters) || config.quarters.length === 0) {
+      fail("quarters должен быть непустым массивом названий кварталов");
+    }
+    if (config.months.length % config.quarters.length !== 0) {
+      fail("число месяцев должно делиться на число кварталов");
+    }
   }
   config.months.forEach((month, i) => {
     if (!month || typeof month.name !== "string" || !month.name.trim()) {
@@ -93,8 +111,24 @@ export function createCalendar(config) {
   const weekdays = config.weekdays.slice();
   const weekLength = weekdays.length;
 
+  // Выходные: по умолчанию последний день недели.
+  const weekendIndices = (config.weekends ?? [weekLength]).map((number) =>
+    mod(number - 1, weekLength),
+  );
+  const weekendSet = new Set(weekendIndices);
+  const isWeekend = (weekdayIndex) => weekendSet.has(weekdayIndex);
+  const weekends = [...weekendSet].sort((a, b) => a - b);
+  const weekendDays = weekends.map((index) => weekdays[index]);
+
   const months = config.months.map((m) => ({ name: m.name, days: m.days }));
   const monthCount = months.length;
+
+  const quarterNames = (config.quarters ?? []).slice();
+  const monthsPerQuarter = quarterNames.length ? monthCount / quarterNames.length : 0;
+  const quarterOfMonth = (monthIndex) =>
+    quarterNames.length ? Math.floor(monthIndex / monthsPerQuarter) : -1;
+  const quarterName = (monthIndex) =>
+    quarterNames.length ? quarterNames[quarterOfMonth(monthIndex)] : null;
   const monthOffsets = [0];
   for (const month of months) {
     monthOffsets.push(monthOffsets[monthOffsets.length - 1] + month.days);
@@ -189,6 +223,7 @@ export function createCalendar(config) {
       year,
       weekdayIndex,
       weekdayName: weekdays[weekdayIndex],
+      isWeekend: isWeekend(weekdayIndex),
       dayOfYear: dayOfYearIndex + 1,
       weekOfYear: Math.floor(dayOfYearIndex / weekLength) + 1,
       yearLength: length,
@@ -266,11 +301,17 @@ export function createCalendar(config) {
 
   return {
     config,
-    world: config.world ?? "Безымянный мир",
     weekdays,
     weekLength,
+    weekends,
+    weekendDays,
+    isWeekend,
     months,
     monthCount,
+    quarters: quarterNames,
+    monthsPerQuarter,
+    quarterOfMonth,
+    quarterName,
     extraLabel,
     EXTRA_PERIOD,
     hasExtraPeriod,
