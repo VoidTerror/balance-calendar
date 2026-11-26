@@ -4,9 +4,25 @@
  */
 
 import { localizedConfig } from "./config.js";
-import { createCalendar, civilToDayIndex, civilToISO } from "./engine.js";
+import { createCalendar, civilToDayIndex, civilToISO, mod } from "./engine.js";
 
 const DAY_MS = 86_400_000;
+
+/* ── лунный слой ────────────────────────────────────── */
+
+const SYNODIC_MONTH = 29.530588853;
+// Новолуние 6 января 2000, 18:14 UTC.
+const MOON_EPOCH = civilToDayIndex(2000, 1, 6) + (18 + 14 / 60) / 24;
+const MOON_ICONS = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘"];
+
+function moonPhase(dayIndex) {
+  const age = mod(dayIndex + 0.5 - MOON_EPOCH, SYNODIC_MONTH);
+  const fraction = age / SYNODIC_MONTH;
+  const illumination = (1 - Math.cos(2 * Math.PI * fraction)) / 2;
+  const icon = MOON_ICONS[Math.round(fraction * 8) % 8];
+
+  return { age, fraction, illumination, icon };
+}
 
 /* ── строки интерфейса ──────────────────────────────── */
 
@@ -108,9 +124,13 @@ function getCalendar(lang, use128) {
 }
 
 const storedLang = readStored("uarza.lang", "ru");
+const storedLayer = readStored("uarza.layer", null);
+const legacyGreg = readStored("uarza.greg", null);
+const layers = ["greg", "moon", "none"];
+
 const state = {
   lang: ["ru", "en", "slav"].includes(storedLang) ? storedLang : "ru",
-  showGreg: readStored("uarza.greg", "1") === "1",
+  layer: layers.includes(storedLayer) ? storedLayer : legacyGreg === "0" ? "none" : "greg",
   use128: readStored("uarza.leap128", "1") === "1",
   year: 1,
   period: 0,
@@ -199,7 +219,6 @@ const el = {
   balanceList: $("balance-list"),
   infoDialog: $("info-dialog"),
   convDialog: $("conv-dialog"),
-  moonDialog: $("moon-dialog"),
   conv: $("conv"),
   convOut: $("conv-out"),
 };
@@ -273,6 +292,7 @@ function renderMonth() {
   renderWeekdays();
   el.weekdays.hidden = isBalance;
   el.days.classList.toggle("is-balance", isBalance);
+  el.days.classList.toggle("show-moon", state.layer === "moon");
 
   const start = cal.periodStart(year, period);
   const count = cal.periodLength(year, period);
@@ -299,6 +319,7 @@ function renderMonth() {
     cells.push(`
       <button type="button" class="${classes.join(" ")}" data-day="${dayIndex}"
         data-greg="${escapeHtml(fmtShort.format(dateOf(dayIndex)))}"
+        data-moon="${escapeHtml(moonPhase(dayIndex).icon)}"
         title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}" ${aria}>
         <span class="cell-num">${number}</span>
       </button>`);
@@ -355,6 +376,7 @@ function miniMonthCard(year, monthIndex) {
     cells.push(
       `<button type="button" class="${classes.join(" ")}" data-day="${dayIndex}"
         data-greg="${escapeHtml(fmtShort.format(dateOf(dayIndex)))}"
+        data-moon="${escapeHtml(moonPhase(dayIndex).icon)}"
         title="${escapeHtml(cellTitle(info))}" aria-label="${escapeHtml(cellTitle(info))}">${info.day}</button>`,
     );
   }
@@ -434,7 +456,8 @@ function renderYear() {
 
   const months = cal.months.map((_, monthIndex) => miniMonthCard(year, monthIndex)).join("");
 
-  el.yearGrid.classList.toggle("show-greg", state.showGreg);
+  el.yearGrid.classList.toggle("show-greg", state.layer === "greg");
+  el.yearGrid.classList.toggle("show-moon", state.layer === "moon");
   el.yearGrid.innerHTML = `
     <div class="year-months">${months}</div>
     ${balanceStrip(year)}`;
@@ -483,7 +506,8 @@ function applyStatic() {
 
   el.convBtn.dataset.icon = t("convIcon");
   el.gregBtn.dataset.icon = t("gregIcon");
-  el.gregBtn.setAttribute("aria-pressed", String(state.showGreg));
+  el.gregBtn.setAttribute("aria-pressed", String(state.layer === "greg"));
+  el.moonBtn.setAttribute("aria-pressed", String(state.layer === "moon"));
   el.leapBtn.setAttribute("aria-pressed", String(state.use128));
 }
 
@@ -499,10 +523,12 @@ function setLang(lang) {
   if (el.convDialog.open) updateConverter();
 }
 
-function setGregorian(on) {
-  state.showGreg = on;
-  store("uarza.greg", on ? "1" : "0");
-  el.gregBtn.setAttribute("aria-pressed", String(on));
+function setLayer(layer) {
+  if (!layers.includes(layer)) return;
+
+  state.layer = state.layer === layer ? "none" : layer;
+  store("uarza.layer", state.layer);
+  applyStatic();
   render();
 }
 
@@ -639,10 +665,10 @@ document.querySelectorAll(".lang-switch button").forEach((button) => {
   button.addEventListener("click", () => setLang(button.dataset.lang));
 });
 
-el.gregBtn.addEventListener("click", () => setGregorian(!state.showGreg));
+el.gregBtn.addEventListener("click", () => setLayer("greg"));
 el.leapBtn.addEventListener("click", () => setLeap128(!state.use128));
+el.moonBtn.addEventListener("click", () => setLayer("moon"));
 el.infoBtn.addEventListener("click", () => openDialog(el.infoDialog));
-el.moonBtn.addEventListener("click", () => openDialog(el.moonDialog));
 
 el.convBtn.addEventListener("click", () => {
   el.conv.value = civilToISO(cal.gregorianOf(state.today));
