@@ -81,10 +81,8 @@ const el = {
   heroKicker: $("hero-kicker"),
   heroDay: $("hero-day"),
   heroMonth: $("hero-month"),
-  heroYear: $("hero-year"),
   heroWeekday: $("hero-weekday"),
   heroGregorian: $("hero-gregorian"),
-  heroClock: $("hero-clock"),
   backToday: $("back-today"),
   weekdays: $("weekdays"),
   days: $("days"),
@@ -116,7 +114,6 @@ function renderHero() {
   el.heroMonth.textContent = label;
   el.heroMonth.classList.toggle("is-long", label.length > 10);
 
-  el.heroYear.textContent = yearLabel(info.year);
   el.heroWeekday.textContent = info.isExtra ? "вне недели" : info.weekdayName;
   el.heroWeekday.classList.toggle("is-off", info.isExtra);
   el.heroWeekday.classList.toggle("is-rest", !info.isExtra && info.isWeekend);
@@ -456,9 +453,6 @@ document.addEventListener("keydown", (event) => {
 /* ── часы и смена суток ─────────────────────────────── */
 
 function tick() {
-  const now = new Date();
-  el.heroClock.textContent = now.toLocaleTimeString("ru-RU", { hour12: false });
-
   const today = localToday();
   if (today !== state.today) {
     const wasToday = state.selected === state.today;
@@ -506,7 +500,7 @@ function init() {
 
   tick();
   render();
-  setInterval(tick, 1000);
+  setInterval(tick, 30000);
 }
 
 init();
