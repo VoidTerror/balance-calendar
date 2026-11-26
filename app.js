@@ -26,6 +26,15 @@ function moonPhase(dayIndex) {
 const moonSvg = (index) =>
   `<svg class="glyph" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><use href="#moon-${index}"></use></svg>`;
 
+// В книге 2027 год — это лист №13 из 19.
+const MOON_CYCLE = 19;
+const MOON_SHEET_ANCHOR_YEAR = 2027;
+const MOON_SHEET_ANCHOR_INDEX = 13;
+
+function moonSheet(year) {
+  return mod(year - MOON_SHEET_ANCHOR_YEAR + MOON_SHEET_ANCHOR_INDEX - 1, MOON_CYCLE) + 1;
+}
+
 const EQUINOX_DAY = civilToDayIndex(2000, 3, 20);
 const TROPICAL_YEAR = 365.2422;
 
@@ -84,6 +93,7 @@ const STRINGS = {
     convTitle: "Конвертер",
     moonTitle: "Лунные фазы",
     sunTitle: "Долгота дня",
+    moonSheet: "лист",
     gregTitle: "Даты по григорианскому календарю",
     gregIcon: "Г",
     leapTitle: "Правило 128 лет",
@@ -114,6 +124,7 @@ const STRINGS = {
     convTitle: "Converter",
     moonTitle: "Moon phases",
     sunTitle: "Daylight",
+    moonSheet: "sheet",
     gregTitle: "Gregorian dates",
     gregIcon: "G",
     leapTitle: "128-year rule",
@@ -252,6 +263,7 @@ const el = {
   periodNote: $("period-note"),
   yearTitle: $("year-title"),
   yearRange: $("year-range"),
+  moonSheet: $("moon-sheet"),
   yearGrid: $("year-grid"),
   gregBtn: $("greg-btn"),
   leapBtn: $("leap-btn"),
@@ -509,6 +521,11 @@ function renderYear() {
   el.yearRange.textContent = `${fmtRangeYear.format(dateOf(yearStart))} — ${fmtRangeYear.format(
     dateOf(yearEnd),
   )}`;
+
+  el.moonSheet.hidden = state.layer !== "moon";
+  if (state.layer === "moon") {
+    el.moonSheet.textContent = `${t("moonSheet")} ${moonSheet(year)}/${MOON_CYCLE}`;
+  }
 
   const months = cal.months.map((_, monthIndex) => miniMonthCard(year, monthIndex)).join("");
 

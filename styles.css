@@ -600,6 +600,19 @@ h1 {
   color: var(--muted);
 }
 
+.moon-sheet {
+  color: var(--violet);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.moon-sheet::before {
+  content: "·";
+  margin-right: 8px;
+  color: var(--line);
+}
+
 .year-grid {
   margin-top: 12px;
 }
@@ -1032,10 +1045,14 @@ button.mini-cell:hover {
   margin-bottom: 5px;
 }
 
+#conv-dialog {
+  width: min(680px, 100% - 28px);
+}
+
 .conv-row {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 10px;
 }
 
@@ -1044,6 +1061,7 @@ button.mini-cell:hover {
   font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .conv-row input[type="date"] {
@@ -1071,6 +1089,17 @@ button.mini-cell:hover {
   color: var(--gold-2);
   font-family: var(--serif);
   font-size: 15px;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .conv-row {
+    flex-wrap: wrap;
+  }
+
+  .conv-row output {
+    white-space: normal;
+  }
 }
 
 html[data-lang="ru"] .i18n[lang="en"],
