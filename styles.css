@@ -71,7 +71,7 @@ body {
 .app {
   position: relative;
   z-index: 1;
-  width: min(1080px, 100% - 40px);
+  width: min(1240px, 100% - 32px);
   margin: 0 auto;
   padding: 20px 0 26px;
 }
@@ -79,18 +79,27 @@ body {
 /* ── шапка ───────────────────────────────────────────── */
 
 .masthead {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
-  flex-wrap: wrap;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.today {
+  justify-self: center;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.view-switch {
+  justify-self: end;
 }
 
 .sigil {
@@ -146,147 +155,121 @@ h1 {
   font-weight: 600;
 }
 
-/* ── герой-карточка ──────────────────────────────────── */
+/* ── плашка «сегодня» в шапке ────────────────────────── */
 
-.hero {
-  position: relative;
-  display: grid;
-  grid-template-columns: 1fr 1.15fr;
-  gap: 18px;
-  padding: 14px 18px;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  background:
-    linear-gradient(155deg, rgba(216, 180, 98, 0.07), transparent 52%),
-    linear-gradient(200deg, #121724, #0b0f18 70%);
-  overflow: hidden;
-  box-shadow: 0 24px 60px -50px rgba(0, 0, 0, 0.9);
-}
-
-.hero::before {
-  content: "";
-  position: absolute;
-  top: -110px;
-  left: -70px;
-  width: 260px;
-  height: 260px;
-  background: radial-gradient(circle, rgba(216, 180, 98, 0.14), transparent 66%);
-  pointer-events: none;
-}
-
-.hero-main {
+.today {
   position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 3px;
+  gap: 1px;
   min-width: 0;
+  padding: 7px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background:
+    linear-gradient(155deg, rgba(216, 180, 98, 0.08), transparent 60%),
+    linear-gradient(200deg, #121724, #0b0f18 70%);
+  overflow: hidden;
 }
 
-.hero-kicker {
-  margin: 0;
-  color: var(--gold);
-  font-size: 8.5px;
-  font-weight: 600;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
+.today::before {
+  content: "";
+  position: absolute;
+  top: -90px;
+  left: -60px;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(216, 180, 98, 0.12), transparent 66%);
+  pointer-events: none;
 }
 
-.hero-date {
+.today-main {
+  position: relative;
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
-  gap: 2px 10px;
-  margin: 0;
+  gap: 1px 8px;
+  min-width: 0;
 }
 
-.hero-day {
+.today-kicker {
+  color: var(--gold);
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.today-day {
   font-family: var(--serif);
-  font-size: clamp(38px, 4.4vw, 46px);
-  line-height: 0.9;
+  font-size: 30px;
+  line-height: 1;
   color: var(--gold-2);
   font-variant-numeric: tabular-nums;
-  text-shadow: 0 0 30px rgba(216, 180, 98, 0.2);
+  text-shadow: 0 0 24px rgba(216, 180, 98, 0.18);
 }
 
-.hero-month {
+.today-month {
   font-family: var(--serif);
-  font-size: clamp(19px, 2.2vw, 24px);
+  font-size: 18px;
   line-height: 1.05;
   color: var(--ink);
 }
 
-.hero-month.is-long {
-  font-size: clamp(15px, 1.7vw, 19px);
+.today-month.is-long {
+  font-size: 14px;
 }
 
-.hero-year {
+.today-year {
   color: var(--muted);
-  font-size: 11.5px;
-  letter-spacing: 0.08em;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
   white-space: nowrap;
 }
 
-.hero-weekday {
-  align-self: flex-start;
-  margin: 4px 0 0;
-  padding: 3px 9px;
+.today-weekday {
+  padding: 2px 8px;
   border: 1px solid rgba(216, 180, 98, 0.35);
   border-radius: 999px;
   color: var(--gold-2);
-  font-size: 9.5px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.hero-meta {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0;
-  min-width: 0;
-}
-
-.meta-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 4px 0;
-  border-bottom: 1px solid var(--line-soft);
-  font-size: 12px;
-}
-
-.meta-row:last-of-type {
-  border-bottom: 0;
-}
-
-.meta-label {
-  color: var(--muted);
   font-size: 8.5px;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
-.meta-value {
-  text-align: right;
-  color: var(--ink-dim);
-  font-variant-numeric: tabular-nums;
+.today-weekday.is-off {
+  color: var(--muted);
+  border-color: var(--line);
 }
 
-.meta-foot {
+.today-weekday.is-rest {
+  color: var(--red-ink);
+  border-color: var(--red-line);
+}
+
+.today-sub {
+  position: relative;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 7px;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.today-gregorian {
+  color: var(--ink-dim);
+}
+
+.today-sep {
+  color: var(--line);
 }
 
 .clock {
   color: var(--muted);
   font-size: 10.5px;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   font-variant-numeric: tabular-nums;
 }
 
@@ -298,7 +281,7 @@ h1 {
   margin: -6px -4px;
   color: var(--gold);
   font: inherit;
-  font-size: 11px;
+  font-size: 10.5px;
   cursor: pointer;
   border: 0;
   text-decoration: underline dotted rgba(216, 180, 98, 0.5);
@@ -307,16 +290,6 @@ h1 {
 
 .link:hover {
   color: var(--gold-2);
-}
-
-.hero-weekday.is-off {
-  color: var(--muted);
-  border-color: var(--line);
-}
-
-.hero-weekday.is-rest {
-  color: var(--red-ink);
-  border-color: var(--red-line);
 }
 
 /* Дни баланса вне недели: отдельная сетка без колонок дней недели. */
@@ -336,8 +309,8 @@ h1 {
 /* ── панель календаря ────────────────────────────────── */
 
 .panel {
-  margin-top: 12px;
-  padding: 14px 16px 10px;
+  margin-top: 10px;
+  padding: 16px 18px 12px;
   border: 1px solid var(--line);
   border-radius: 16px;
   background: linear-gradient(180deg, rgba(21, 26, 40, 0.75), rgba(12, 16, 25, 0.9));
@@ -401,7 +374,7 @@ h1 {
   display: grid;
   grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
   gap: 6px;
-  margin: 14px 0 6px;
+  margin: 16px 0 8px;
 }
 
 .wd {
@@ -415,7 +388,7 @@ h1 {
 
 .wd-letter {
   font-family: var(--serif);
-  font-size: 14px;
+  font-size: 16px;
   color: var(--gold-2);
   line-height: 1;
 }
@@ -423,7 +396,7 @@ h1 {
 .wd-name {
   max-width: 100%;
   color: var(--muted);
-  font-size: 9.5px;
+  font-size: 10px;
   letter-spacing: 0.09em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -449,8 +422,8 @@ h1 {
   align-items: center;
   justify-content: center;
   gap: 2px;
-  min-height: 64px;
-  padding: 6px 4px;
+  min-height: 80px;
+  padding: 8px 5px;
   border: 1px solid var(--line-soft);
   border-radius: 10px;
   background: rgba(11, 15, 24, 0.72);
@@ -474,7 +447,7 @@ h1 {
 
 .cell-num {
   font-family: var(--serif);
-  font-size: 22px;
+  font-size: 26px;
   line-height: 1;
   font-variant-numeric: tabular-nums;
   order: 0;
@@ -486,7 +459,7 @@ h1 {
   content: attr(data-greg);
   order: 1;
   color: var(--muted);
-  font-size: 9.5px;
+  font-size: 10.5px;
   letter-spacing: 0.03em;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -583,12 +556,12 @@ h1 {
 .year-months {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .mini {
   min-width: 0;
-  padding: 8px 9px 9px;
+  padding: 10px 11px 11px;
   border: 1px solid var(--line-soft);
   border-radius: 12px;
   background: rgba(12, 16, 25, 0.7);
@@ -603,7 +576,7 @@ h1 {
 
 .mini-quarter {
   color: var(--gold);
-  font-size: 7.5px;
+  font-size: 8px;
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -612,7 +585,7 @@ h1 {
 
 .mini-range {
   color: var(--muted);
-  font-size: 8.5px;
+  font-size: 9px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -623,14 +596,14 @@ h1 {
   display: block;
   width: 100%;
   min-width: 0;
-  min-height: 20px;
-  margin: 0 0 4px;
+  min-height: 22px;
+  margin: 0 0 5px;
   padding: 0;
   border: 0;
   background: none;
   color: var(--ink);
   font-family: var(--serif);
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.2;
   text-align: left;
   cursor: pointer;
@@ -653,7 +626,7 @@ h1 {
 
 .mini-wd {
   color: var(--muted);
-  font-size: 7.5px;
+  font-size: 8.5px;
   text-align: center;
   text-transform: uppercase;
 }
@@ -665,10 +638,10 @@ h1 {
 .mini-cell {
   display: grid;
   place-items: center;
-  height: 26px;
-  border-radius: 3px;
+  height: 38px;
+  border-radius: 4px;
   color: var(--ink-dim);
-  font-size: 11.5px;
+  font-size: 15.5px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -681,7 +654,7 @@ button.mini-cell {
   border: 0;
   background: transparent;
   font: inherit;
-  font-size: 11.5px;
+  font-size: 15.5px;
   cursor: pointer;
   padding: 0;
 }
@@ -841,25 +814,33 @@ button.mini-cell:hover {
 
   .mini-cell,
   button.mini-cell {
-    height: 26px;
-    font-size: 12px;
+    height: 38px;
+    font-size: 15px;
   }
 }
 
-@media (max-width: 760px) {
-  .hero {
-    grid-template-columns: 1fr;
-    gap: 10px;
-    padding: 14px 16px;
+@media (max-width: 980px) {
+  .masthead {
+    grid-template-columns: 1fr auto;
+    gap: 10px 12px;
   }
 
-  .hero-meta {
-    border-top: 1px solid var(--line-soft);
-    padding-top: 4px;
+  .brand {
+    grid-column: 1;
+    grid-row: 1;
   }
 
-  .hero-date {
-    gap: 2px 8px;
+  .view-switch {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .today {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: stretch;
+    width: auto;
   }
 }
 
@@ -882,16 +863,16 @@ button.mini-cell:hover {
   }
 
   .cell {
-    min-height: 54px;
+    min-height: 64px;
     border-radius: 9px;
   }
 
   .cell-num {
-    font-size: 17px;
+    font-size: 20px;
   }
 
   .cell::before {
-    font-size: 8.5px;
+    font-size: 9px;
   }
 
   .cell.is-extra .cell-num {
@@ -914,8 +895,8 @@ button.mini-cell:hover {
 
   .mini-cell,
   button.mini-cell {
-    height: 30px;
-    font-size: 12.5px;
+    height: 42px;
+    font-size: 16px;
   }
 }
 
@@ -930,16 +911,16 @@ button.mini-cell:hover {
     font-size: 13px;
   }
 
-  .hero {
-    padding: 12px 14px;
+  .today {
+    padding: 6px 12px;
   }
 
-  .hero-day {
-    font-size: 34px;
+  .today-day {
+    font-size: 26px;
   }
 
   .cell {
-    min-height: 46px;
+    min-height: 56px;
     padding: 5px 2px;
   }
 

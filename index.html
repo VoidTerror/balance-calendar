@@ -20,34 +20,28 @@
           <h1>Календарь Уарза</h1>
         </div>
       </div>
+
+      <section class="today" aria-live="polite">
+        <div class="today-main">
+          <span class="today-kicker" id="hero-kicker">Сегодня</span>
+          <span class="today-day" id="hero-day">—</span>
+          <span class="today-month" id="hero-month">—</span>
+          <span class="today-year" id="hero-year"></span>
+          <span class="today-weekday" id="hero-weekday">—</span>
+        </div>
+        <div class="today-sub">
+          <span class="today-gregorian" id="hero-gregorian">—</span>
+          <span class="today-sep" aria-hidden="true">·</span>
+          <span class="clock" id="hero-clock">--:--:--</span>
+          <button type="button" class="link" id="back-today" hidden>вернуться к сегодня</button>
+        </div>
+      </section>
+
       <div class="view-switch" role="tablist" aria-label="Вид календаря">
         <button type="button" role="tab" data-view="year" aria-selected="true">Год</button>
         <button type="button" role="tab" data-view="month" aria-selected="false">Месяц</button>
       </div>
     </header>
-
-    <section class="hero" aria-live="polite">
-      <div class="hero-main">
-        <p class="hero-kicker" id="hero-kicker">Сегодня</p>
-        <p class="hero-date">
-          <span class="hero-day" id="hero-day">—</span>
-          <span class="hero-month" id="hero-month">—</span>
-          <span class="hero-year" id="hero-year"></span>
-        </p>
-        <p class="hero-weekday" id="hero-weekday">—</p>
-      </div>
-
-      <div class="hero-meta">
-        <div class="meta-row">
-          <span class="meta-label">Григорианский</span>
-          <span class="meta-value" id="hero-gregorian">—</span>
-        </div>
-        <div class="meta-foot">
-          <span class="clock" id="hero-clock">--:--:--</span>
-          <button type="button" class="link" id="back-today" hidden>вернуться к сегодня</button>
-        </div>
-      </div>
-    </section>
 
     <main>
       <section class="panel" id="panel-month" aria-label="Месяц">
