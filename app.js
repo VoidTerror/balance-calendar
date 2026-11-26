@@ -78,17 +78,12 @@ state.selected = state.today;
 const $ = (id) => document.getElementById(id);
 
 const el = {
-  tagline: $("tagline"),
   heroKicker: $("hero-kicker"),
   heroDay: $("hero-day"),
   heroMonth: $("hero-month"),
   heroYear: $("hero-year"),
   heroWeekday: $("hero-weekday"),
   heroGregorian: $("hero-gregorian"),
-  heroDoy: $("hero-doy"),
-  heroWeek: $("hero-week"),
-  heroLeft: $("hero-left"),
-  heroProgress: $("hero-progress"),
   heroClock: $("hero-clock"),
   backToday: $("back-today"),
   weekdays: $("weekdays"),
@@ -124,20 +119,8 @@ function renderHero() {
   el.heroYear.textContent = yearLabel(info.year);
   el.heroWeekday.textContent = info.isExtra ? "вне недели" : info.weekdayName;
   el.heroWeekday.classList.toggle("is-off", info.isExtra);
+  el.heroWeekday.classList.toggle("is-rest", !info.isExtra && info.isWeekend);
   el.heroGregorian.textContent = fmtLong.format(dateOf(info.dayIndex));
-
-  el.heroDoy.textContent = `${info.dayOfYear} / ${info.yearLength}`;
-
-  el.heroWeek.textContent = info.isExtra ? "—" : `${info.weekOfYear} / ${cal.weeksInYear}`;
-
-  el.heroLeft.textContent = daysWord(info.daysLeftInYear);
-
-  const percent = (info.dayOfYear / info.yearLength) * 100;
-  el.heroProgress.style.width = `${percent.toFixed(2)}%`;
-  el.heroProgress.parentElement.setAttribute(
-    "aria-label",
-    `Год пройден на ${Math.round(percent)} процентов`,
-  );
 
   el.backToday.hidden = isToday;
 }
@@ -251,6 +234,7 @@ function miniMonthCard(year, monthIndex) {
     const dayIndex = start + i;
     const info = cal.fromDayIndex(dayIndex);
     const classes = ["mini-cell"];
+    if (info.isWeekend) classes.push("is-rest");
     if (dayIndex === state.today) classes.push("is-today");
     if (dayIndex === state.selected) classes.push("is-selected");
     cells.push(
@@ -342,7 +326,7 @@ function render() {
   });
 
   const todayInfo = cal.fromDayIndex(state.today);
-  document.title = `${todayInfo.day} ${todayInfo.monthName} — Календарь`;
+  document.title = `${todayInfo.day} ${todayInfo.monthName} — Календарь ${cal.world}`;
 }
 
 /* ── навигация ──────────────────────────────────────── */
@@ -510,13 +494,6 @@ el.conv.addEventListener("input", updateConverter);
 
 function init() {
   document.documentElement.style.setProperty("--cols", String(cal.weekLength));
-
-  const lengths = new Set();
-  const cycle = Math.max(cal.config.leap?.every ?? 1, 1);
-  for (let year = 1; year <= cycle; year += 1) lengths.add(cal.yearLength(year));
-  const lengthsText = [...lengths].sort((a, b) => a - b).join("/");
-
-  el.tagline.textContent = `${cal.monthCount} месяцев · ${cal.weekLength} дней в неделе · ${lengthsText} дней в году`;
 
   el.footnote.textContent =
     `Точка отсчёта: 1 ${cal.months[0].name} ${cal.config.epoch.year} года = ` +

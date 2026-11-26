@@ -18,6 +18,8 @@
  */
 
 export const CONFIG = {
+  world: "Уарза",
+
   // 9 дней в неделе.
   weekdays: [
     "Кон",

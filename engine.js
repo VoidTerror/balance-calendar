@@ -323,6 +323,7 @@ export function createCalendar(config) {
 
   return {
     config,
+    world: config.world ?? "",
     weekdays,
     weekLength,
     weekends,
