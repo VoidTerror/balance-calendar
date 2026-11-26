@@ -74,11 +74,11 @@ export const CONFIG = {
 };
 
 /**
- * Английские названия. В PDF их не было, поэтому это транслитерация —
- * правьте свободно, структура календаря от этого не зависит.
+ * Английские названия: месяцы — международные имена из спецификации
+ * (Unar…Octar), дни недели — транслитерация.
  */
 const EN = {
-  world: "Uarza",
+  world: "Uarzian Calendar",
   weekdays: [
     "Kon",
     "Delnik",
@@ -91,14 +91,14 @@ const EN = {
     "Osmitza",
   ],
   months: [
-    "Proletnik",
-    "Traven",
-    "Kresten",
-    "Serpen",
-    "Veresen",
-    "Gruden",
-    "Studen",
-    "Lyuten",
+    "Unar",
+    "Binar",
+    "Ternar",
+    "Quarter",
+    "Quinter",
+    "Sexter",
+    "Septer",
+    "Octar",
   ],
   extraLabel: "Balance days",
   extraDays: [

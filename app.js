@@ -25,7 +25,6 @@ const STRINGS = {
     backToToday: "вернуться к сегодня",
     viewYear: "Год",
     viewMonth: "Месяц",
-    viewSwitchLabel: "Вид календаря",
     langLabel: "Язык",
     infoTitle: "О календаре",
     convTitle: "Конвертер",
@@ -42,10 +41,10 @@ const STRINGS = {
     yearPanelLabel: "Год",
     betweenYears: "между годами",
     metaDescription:
-      "Календарь Уарза: 8 месяцев по 45 дней, 9-дневная неделя, выходные 1/5/9 и дни баланса. Григорианская дата рядом с каждой датой.",
+      "Уарзианский календарь: 8 месяцев по 45 дней, 9-дневная неделя, выходные 1/5/9 и дни баланса. Григорианская дата рядом с каждой датой.",
   },
   en: {
-    appTitle: "Uarza Calendar",
+    appTitle: "Uarzian Calendar",
     docTitle: "Calendar",
     today: "Today",
     selected: "Selected",
@@ -53,7 +52,6 @@ const STRINGS = {
     backToToday: "back to today",
     viewYear: "Year",
     viewMonth: "Month",
-    viewSwitchLabel: "Calendar view",
     langLabel: "Language",
     infoTitle: "About the calendar",
     convTitle: "Converter",
@@ -70,7 +68,7 @@ const STRINGS = {
     yearPanelLabel: "Year",
     betweenYears: "between years",
     metaDescription:
-      "Uarza Calendar: 8 months of 45 days, a 9-day week, weekends 1/5/9 and balance days. Gregorian date next to every date.",
+      "The Uarzian Calendar: 8 months of 45 days, a 9-day week, weekends 1/5/9 and balance days. Gregorian date next to every date.",
   },
 };
 
@@ -103,7 +101,6 @@ function localToday() {
 const state = {
   lang: readStored("uarza.lang", "ru") === "en" ? "en" : "ru",
   showGreg: readStored("uarza.greg", "0") === "1",
-  view: "year",
   year: 1,
   period: 0,
   selected: 0,
@@ -178,8 +175,6 @@ const el = {
   days: $("days"),
   periodTitle: $("period-title"),
   periodNote: $("period-note"),
-  panelMonth: $("panel-month"),
-  panelYear: $("panel-year"),
   yearTitle: $("year-title"),
   yearRange: $("year-range"),
   yearGrid: $("year-grid"),
@@ -189,6 +184,10 @@ const el = {
   convBtn: $("conv-btn"),
   langRu: document.querySelector('.lang-switch button[data-lang="ru"]'),
   langEn: document.querySelector('.lang-switch button[data-lang="en"]'),
+  monthDialog: $("month-dialog"),
+  balanceDialog: $("balance-dialog"),
+  balanceTitle: $("balance-title"),
+  balanceList: $("balance-list"),
   infoDialog: $("info-dialog"),
   convDialog: $("conv-dialog"),
   moonDialog: $("moon-dialog"),
@@ -262,6 +261,7 @@ function renderMonth() {
   const name = cal.periodName(period);
   el.periodTitle.textContent = `${name} · ${yearLabel(year)}`;
 
+  renderWeekdays();
   el.weekdays.hidden = isBalance;
   el.days.classList.toggle("is-balance", isBalance);
 
@@ -372,7 +372,7 @@ function balanceStrip(year) {
   const chips = entries
     .map((entry) => {
       const classes = entry.dayIndex === state.today ? "is-today" : "";
-      return `<button type="button" class="${classes}" data-day="${entry.dayIndex}"
+      return `<button type="button" class="${classes}" data-balance="1" data-balance-day="${entry.dayIndex}"
         title="${escapeHtml(cellTitle(cal.fromDayIndex(entry.dayIndex)))}">${escapeHtml(
           entry.name,
         )}</button>`;
@@ -385,12 +385,32 @@ function balanceStrip(year) {
 
   return `
     <div class="balance-strip">
-      <button type="button" class="balance-label" data-month="${EXTRA}">${escapeHtml(
+      <button type="button" class="balance-label" data-balance="1">${escapeHtml(
         cal.extraLabel,
       )}</button>
       <span class="balance-range">${daysWord(entries.length)} · ${escapeHtml(range)}</span>
       <div class="balance-chips">${chips}</div>
     </div>`;
+}
+
+function renderBalance() {
+  const year = state.year;
+  const entries = cal.extraEntriesFor(year);
+
+  el.balanceTitle.textContent = `${cal.extraLabel} · ${yearLabel(year)}`;
+  el.balanceList.innerHTML = entries
+    .map((entry) => {
+      const classes = ["balance-card"];
+      if (entry.dayIndex === state.today) classes.push("is-today");
+      if (entry.dayIndex === state.selected) classes.push("is-selected");
+      return `<button type="button" class="${classes.join(" ")}" data-balance-day="${entry.dayIndex}">
+        <span class="balance-card-name">${escapeHtml(entry.name)}</span>
+        <span class="balance-card-date">${escapeHtml(
+          fmtLong.format(dateOf(entry.dayIndex)),
+        )}</span>
+      </button>`;
+    })
+    .join("");
 }
 
 function renderYear() {
@@ -414,20 +434,10 @@ function renderYear() {
 /* ── общий рендер ───────────────────────────────────── */
 
 function render() {
-  el.panelMonth.hidden = state.view !== "month";
-  el.panelYear.hidden = state.view !== "year";
-
   renderHero();
-  if (state.view === "month") {
-    renderWeekdays();
-    renderMonth();
-  } else {
-    renderYear();
-  }
-
-  document.querySelectorAll(".view-switch button").forEach((button) => {
-    button.setAttribute("aria-selected", String(button.dataset.view === state.view));
-  });
+  renderYear();
+  if (el.monthDialog.open) renderMonth();
+  if (el.balanceDialog.open) renderBalance();
 
   const todayInfo = cal.fromDayIndex(state.today);
   document.title = `${todayInfo.day} ${todayInfo.monthName} — ${t("docTitle")}`;
@@ -493,14 +503,14 @@ function openDialog(dialog) {
 /* ── навигация ──────────────────────────────────────── */
 
 function goPeriod(delta) {
-  state.view = "month";
   let { year, period } = state;
+  if (period >= cal.monthCount || period < 0) period = 0;
   period += delta;
-  if (period >= cal.periodCount) {
+  if (period >= cal.monthCount) {
     period = 0;
     year += 1;
   } else if (period < 0) {
-    period = cal.periodCount - 1;
+    period = cal.monthCount - 1;
     year -= 1;
   }
   state.year = year;
@@ -517,9 +527,7 @@ function goToday() {
   state.today = localToday();
   state.selected = state.today;
   syncTo(state.selected);
-  state.view = "month";
   render();
-  focusSelected();
 }
 
 function selectDay(dayIndex) {
@@ -527,9 +535,19 @@ function selectDay(dayIndex) {
   syncTo(dayIndex);
 }
 
-function focusSelected() {
-  const node = el.days.querySelector(`.cell[data-day="${state.selected}"]`);
-  node?.focus({ preventScroll: true });
+function openMonth(monthIndex) {
+  state.period = monthIndex;
+  renderMonth();
+  openDialog(el.monthDialog);
+}
+
+function openBalance(dayIndex = null) {
+  if (dayIndex !== null) {
+    state.selected = dayIndex;
+    syncTo(dayIndex);
+  }
+  renderBalance();
+  openDialog(el.balanceDialog);
 }
 
 /* ── конвертер ──────────────────────────────────────── */
@@ -551,13 +569,6 @@ function updateConverter() {
 
 /* ── события ────────────────────────────────────────── */
 
-document.querySelectorAll(".view-switch button").forEach((button) => {
-  button.addEventListener("click", () => {
-    state.view = button.dataset.view;
-    render();
-  });
-});
-
 $("prev-period").addEventListener("click", () => goPeriod(-1));
 $("next-period").addEventListener("click", () => goPeriod(1));
 $("prev-year").addEventListener("click", () => goYear(-1));
@@ -570,29 +581,36 @@ el.days.addEventListener("click", (event) => {
   const cell = event.target.closest("button.cell[data-day]");
   if (!cell) return;
   selectDay(Number(cell.dataset.day));
-  el.days.querySelectorAll(".cell.is-selected").forEach((node) => {
-    node.classList.remove("is-selected");
-  });
-  cell.classList.add("is-selected");
-  renderHero();
+  render();
 });
 
 el.yearGrid.addEventListener("click", (event) => {
-  const dayButton = event.target.closest("button[data-day]");
-  if (dayButton) {
-    selectDay(Number(dayButton.dataset.day));
-    state.view = "month";
-    render();
-    focusSelected();
+  const monthButton = event.target.closest("button[data-month]");
+  if (monthButton) {
+    openMonth(Number(monthButton.dataset.month));
     return;
   }
 
-  const monthButton = event.target.closest("button[data-month]");
-  if (monthButton) {
-    state.period = Number(monthButton.dataset.month);
-    state.view = "month";
+  const balanceButton = event.target.closest("[data-balance]");
+  if (balanceButton) {
+    const dayIndex = balanceButton.dataset.balanceDay;
+    openBalance(dayIndex ? Number(dayIndex) : null);
+    return;
+  }
+
+  const dayButton = event.target.closest("button[data-day]");
+  if (dayButton) {
+    selectDay(Number(dayButton.dataset.day));
     render();
   }
+});
+
+el.balanceList.addEventListener("click", (event) => {
+  const card = event.target.closest("button[data-balance-day]");
+  if (!card) return;
+  selectDay(Number(card.dataset.balanceDay));
+  el.balanceDialog.close();
+  render();
 });
 
 el.langRu.addEventListener("click", () => setLang("ru"));
@@ -626,13 +644,11 @@ document.addEventListener("keydown", (event) => {
   switch (event.key) {
     case "ArrowLeft":
       event.preventDefault();
-      if (state.view === "year") goYear(-1);
-      else goPeriod(-1);
+      goYear(-1);
       break;
     case "ArrowRight":
       event.preventDefault();
-      if (state.view === "year") goYear(1);
-      else goPeriod(1);
+      goYear(1);
       break;
     case "ArrowUp":
       event.preventDefault();
