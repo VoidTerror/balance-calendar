@@ -174,6 +174,7 @@ h1 {
 #leap-btn::before {
   font-size: 11px;
   letter-spacing: -0.02em;
+  transform: translateX(-2px);
 }
 
 .tool-btn:hover {
