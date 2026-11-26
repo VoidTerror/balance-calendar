@@ -13,15 +13,58 @@ const DAY_MS = 86_400_000;
 const SYNODIC_MONTH = 29.530588853;
 // Новолуние 6 января 2000, 18:14 UTC.
 const MOON_EPOCH = civilToDayIndex(2000, 1, 6) + (18 + 14 / 60) / 24;
-const MOON_ICONS = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘"];
 
 function moonPhase(dayIndex) {
   const age = mod(dayIndex + 0.5 - MOON_EPOCH, SYNODIC_MONTH);
   const fraction = age / SYNODIC_MONTH;
   const illumination = (1 - Math.cos(2 * Math.PI * fraction)) / 2;
-  const icon = MOON_ICONS[Math.round(fraction * 8) % 8];
+  const index = Math.round(fraction * 8) % 8;
 
-  return { age, fraction, illumination, icon };
+  return { age, fraction, illumination, index };
+}
+
+const moonSvg = (index) =>
+  `<svg class="glyph" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><use href="#moon-${index}"></use></svg>`;
+
+const EQUINOX_DAY = civilToDayIndex(2000, 3, 20);
+const TROPICAL_YEAR = 365.2422;
+
+function daylightFraction(dayIndex) {
+  const phase = mod(dayIndex - EQUINOX_DAY, TROPICAL_YEAR) / TROPICAL_YEAR;
+  return 0.5 + 0.5 * Math.sin(2 * Math.PI * phase);
+}
+
+function sunSvg(fraction) {
+  const value = Math.min(1, Math.max(0, fraction));
+  const c = 12;
+  const r = 6.5;
+  const angle = value * Math.PI * 2 - Math.PI / 2;
+  const x = (c + r * Math.cos(angle)).toFixed(2);
+  const y = (c + r * Math.sin(angle)).toFixed(2);
+  const large = value > 0.5 ? 1 : 0;
+
+  let fill = "";
+  if (value >= 0.999) {
+    fill = `<circle cx="${c}" cy="${c}" r="${r}" fill="#f2d79b"/>`;
+  } else if (value > 0.001) {
+    fill = `<path d="M${c} ${c} L${c} ${c - r} A${r} ${r} 0 ${large} 1 ${x} ${y} Z" fill="#f2d79b"/>`;
+  }
+
+  const rays = Array.from({ length: 8 }, (_, i) => {
+    const a = (i * Math.PI) / 4;
+    const x1 = (c + 8.2 * Math.cos(a)).toFixed(1);
+    const y1 = (c + 8.2 * Math.sin(a)).toFixed(1);
+    const x2 = (c + 10.4 * Math.cos(a)).toFixed(1);
+    const y2 = (c + 10.4 * Math.sin(a)).toFixed(1);
+    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+  }).join("");
+
+  return `<svg class="glyph" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <g stroke="#8a6f33" stroke-width="1" stroke-linecap="round">${rays}</g>
+    <circle cx="${c}" cy="${c}" r="${r}" fill="rgba(8, 10, 16, 0.7)"/>
+    ${fill}
+    <circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="#8a6f33" stroke-width="1"/>
+  </svg>`;
 }
 
 /* ── строки интерфейса ──────────────────────────────── */
@@ -40,6 +83,7 @@ const STRINGS = {
     infoTitle: "О календаре",
     convTitle: "Конвертер",
     moonTitle: "Лунные фазы",
+    sunTitle: "Долгота дня",
     gregTitle: "Даты по григорианскому календарю",
     gregIcon: "Г",
     leapTitle: "Правило 128 лет",
@@ -69,6 +113,7 @@ const STRINGS = {
     infoTitle: "About the calendar",
     convTitle: "Converter",
     moonTitle: "Moon phases",
+    sunTitle: "Daylight",
     gregTitle: "Gregorian dates",
     gregIcon: "G",
     leapTitle: "128-year rule",
@@ -126,7 +171,7 @@ function getCalendar(lang, use128) {
 const storedLang = readStored("uarza.lang", "ru");
 const storedLayer = readStored("uarza.layer", null);
 const legacyGreg = readStored("uarza.greg", null);
-const layers = ["greg", "moon", "none"];
+const layers = ["greg", "moon", "sun", "none"];
 
 const state = {
   lang: ["ru", "en", "slav"].includes(storedLang) ? storedLang : "ru",
@@ -211,6 +256,7 @@ const el = {
   gregBtn: $("greg-btn"),
   leapBtn: $("leap-btn"),
   moonBtn: $("moon-btn"),
+  sunBtn: $("sun-btn"),
   infoBtn: $("info-btn"),
   convBtn: $("conv-btn"),
   monthDialog: $("month-dialog"),
@@ -283,6 +329,18 @@ function cellTitle(info) {
   )}`;
 }
 
+function cellGlyph(dayIndex) {
+  if (state.layer === "moon") {
+    return `<span class="cell-glyph" aria-hidden="true">${moonSvg(
+      moonPhase(dayIndex).index,
+    )}</span>`;
+  }
+  if (state.layer === "sun") {
+    return `<span class="cell-glyph" aria-hidden="true">${sunSvg(daylightFraction(dayIndex))}</span>`;
+  }
+  return "";
+}
+
 function renderMonth() {
   const { year, period } = state;
   const isBalance = period === EXTRA;
@@ -292,7 +350,7 @@ function renderMonth() {
   renderWeekdays();
   el.weekdays.hidden = isBalance;
   el.days.classList.toggle("is-balance", isBalance);
-  el.days.classList.toggle("show-moon", state.layer === "moon");
+  el.days.classList.toggle("has-glyph", state.layer === "moon" || state.layer === "sun");
 
   const start = cal.periodStart(year, period);
   const count = cal.periodLength(year, period);
@@ -319,9 +377,8 @@ function renderMonth() {
     cells.push(`
       <button type="button" class="${classes.join(" ")}" data-day="${dayIndex}"
         data-greg="${escapeHtml(fmtShort.format(dateOf(dayIndex)))}"
-        data-moon="${escapeHtml(moonPhase(dayIndex).icon)}"
         title="${escapeHtml(title)}" aria-label="${escapeHtml(title)}" ${aria}>
-        <span class="cell-num">${number}</span>
+        <span class="cell-num">${number}</span>${cellGlyph(dayIndex)}
       </button>`);
   }
 
@@ -376,8 +433,7 @@ function miniMonthCard(year, monthIndex) {
     cells.push(
       `<button type="button" class="${classes.join(" ")}" data-day="${dayIndex}"
         data-greg="${escapeHtml(fmtShort.format(dateOf(dayIndex)))}"
-        data-moon="${escapeHtml(moonPhase(dayIndex).icon)}"
-        title="${escapeHtml(cellTitle(info))}" aria-label="${escapeHtml(cellTitle(info))}">${info.day}</button>`,
+        title="${escapeHtml(cellTitle(info))}" aria-label="${escapeHtml(cellTitle(info))}">${info.day}${cellGlyph(dayIndex)}</button>`,
     );
   }
 
@@ -458,6 +514,7 @@ function renderYear() {
 
   el.yearGrid.classList.toggle("show-greg", state.layer === "greg");
   el.yearGrid.classList.toggle("show-moon", state.layer === "moon");
+  el.yearGrid.classList.toggle("show-sun", state.layer === "sun");
   el.yearGrid.innerHTML = `
     <div class="year-months">${months}</div>
     ${balanceStrip(year)}`;
@@ -508,6 +565,7 @@ function applyStatic() {
   el.gregBtn.dataset.icon = t("gregIcon");
   el.gregBtn.setAttribute("aria-pressed", String(state.layer === "greg"));
   el.moonBtn.setAttribute("aria-pressed", String(state.layer === "moon"));
+  el.sunBtn.setAttribute("aria-pressed", String(state.layer === "sun"));
   el.leapBtn.setAttribute("aria-pressed", String(state.use128));
 }
 
@@ -668,6 +726,7 @@ document.querySelectorAll(".lang-switch button").forEach((button) => {
 el.gregBtn.addEventListener("click", () => setLayer("greg"));
 el.leapBtn.addEventListener("click", () => setLeap128(!state.use128));
 el.moonBtn.addEventListener("click", () => setLayer("moon"));
+el.sunBtn.addEventListener("click", () => setLayer("sun"));
 el.infoBtn.addEventListener("click", () => openDialog(el.infoDialog));
 
 el.convBtn.addEventListener("click", () => {

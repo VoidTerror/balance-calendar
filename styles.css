@@ -730,33 +730,43 @@ h1 {
   color: rgba(23, 19, 7, 0.7);
 }
 
-/* Лунный слой: значок фазы под числом вместо григорианской даты. */
-.show-moon .mini-cell::after {
-  content: attr(data-moon);
-  display: block;
-  color: #dfe6ff;
-  font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
-  font-size: 17px;
-  font-weight: 400;
-  line-height: 1;
-  filter: grayscale(1) brightness(1.8);
+/* Лунный и солнечный слои: SVG-значки под числом. */
+.svg-sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
 }
 
-.show-moon .mini-cell {
+.cell-glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.mini-cell .cell-glyph svg {
+  width: 20px;
+  height: 20px;
+}
+
+.cell .cell-glyph svg {
+  width: 22px;
+  height: 22px;
+}
+
+.show-moon .mini-cell,
+.show-sun .mini-cell {
   font-size: clamp(14px, 0.95vw, 18px);
 }
 
-.show-moon .mini-cell.is-today::after {
-  filter: none;
+.days.has-glyph .cell::before {
+  content: none;
 }
 
-.days.show-moon .cell::before {
-  content: attr(data-moon);
-  color: #dfe6ff;
-  font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif;
-  font-size: 16px;
-  font-weight: 400;
-  filter: grayscale(1) brightness(1.6);
+.mini-cell.is-today .cell-glyph svg,
+.cell.is-today .cell-glyph svg {
+  filter: brightness(0.5);
 }
 
 .mini-cell.is-rest {
