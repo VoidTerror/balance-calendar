@@ -160,12 +160,13 @@ h1 {
 .today {
   position: relative;
   display: flex;
-  flex-direction: column;
-  gap: 1px;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 3px 7px;
   min-width: 0;
-  padding: 7px 14px;
+  padding: 8px 14px;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 12px;
   background:
     linear-gradient(155deg, rgba(216, 180, 98, 0.08), transparent 60%),
     linear-gradient(200deg, #121724, #0b0f18 70%);
@@ -175,62 +176,51 @@ h1 {
 .today::before {
   content: "";
   position: absolute;
-  top: -90px;
+  top: -70px;
   left: -60px;
-  width: 200px;
-  height: 200px;
-  background: radial-gradient(circle, rgba(216, 180, 98, 0.12), transparent 66%);
+  width: 160px;
+  height: 160px;
+  background: radial-gradient(circle, rgba(216, 180, 98, 0.10), transparent 66%);
   pointer-events: none;
 }
 
-.today-main {
-  position: relative;
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 1px 8px;
-  min-width: 0;
-}
-
 .today-kicker {
-  color: var(--gold);
-  font-size: 8px;
-  font-weight: 600;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
+  color: var(--muted);
+  font-family: var(--serif);
+  font-size: 12px;
+  letter-spacing: 0;
 }
 
 .today-day {
   font-family: var(--serif);
-  font-size: 30px;
-  line-height: 1;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.1;
   color: var(--gold-2);
   font-variant-numeric: tabular-nums;
-  text-shadow: 0 0 24px rgba(216, 180, 98, 0.18);
 }
 
 .today-month {
   font-family: var(--serif);
-  font-size: 18px;
-  line-height: 1.05;
-  color: var(--ink);
-}
-
-.today-month.is-long {
   font-size: 14px;
-}
-
-.today-weekday {
-  color: var(--gold-2);
-  font-size: 11px;
-  letter-spacing: 0.02em;
+  line-height: 1.1;
+  color: var(--ink);
   white-space: nowrap;
 }
 
-.today-weekday::before {
-  content: "·";
-  margin-right: 6px;
-  color: var(--line);
+.today-month::after {
+  content: ",";
+}
+
+.today-month.is-long {
+  font-size: 13px;
+}
+
+.today-weekday {
+  font-family: var(--serif);
+  font-size: 14px;
+  color: var(--gold-2);
+  white-space: nowrap;
 }
 
 .today-weekday.is-off {
@@ -241,19 +231,17 @@ h1 {
   color: var(--red);
 }
 
-.today-sub {
-  position: relative;
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 4px 10px;
+.today-gregorian {
+  font-family: var(--serif);
+  font-size: 13.5px;
   color: var(--muted);
-  font-size: 10px;
+  white-space: nowrap;
 }
 
-.today-gregorian {
-  color: var(--ink-dim);
-  white-space: nowrap;
+.today-gregorian::before {
+  content: "·";
+  margin-right: 7px;
+  color: var(--line);
 }
 
 .link {
@@ -896,10 +884,6 @@ button.mini-cell:hover {
 
   .today {
     padding: 6px 12px;
-  }
-
-  .today-day {
-    font-size: 26px;
   }
 
   .cell {
