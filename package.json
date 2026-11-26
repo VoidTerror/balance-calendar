@@ -1,0 +1,12 @@
+{
+  "name": "aerion-calendar",
+  "version": "1.0.0",
+  "description": "Календарь вымышленного мира: 9 месяцев по 40 дней, 8-дневная неделя, дни безмолвия.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/engine.test.mjs",
+    "serve": "python -m http.server 8765"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Календарь Аэриона</title>
+  <meta name="description" content="Календарь вымышленного мира Аэрион: 9 месяцев по 40 дней, 8-дневная неделя и Дни Безмолвия. С григорианской датой рядом.">
+  <meta name="theme-color" content="#070910">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0e18'/%3E%3Cpath d='M32 10l4.6 14.2L51 29l-14.4 4.8L32 48l-4.6-14.2L13 29l14.4-4.8z' fill='%23d8b462'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="backdrop" aria-hidden="true"></div>
+
+  <div class="app">
+    <header class="masthead">
+      <div class="brand">
+        <span class="sigil" aria-hidden="true">✦</span>
+        <div>
+          <h1>Календарь Аэриона</h1>
+          <p class="tagline" id="tagline"></p>
+        </div>
+      </div>
+      <div class="view-switch" role="tablist" aria-label="Вид календаря">
+        <button type="button" role="tab" data-view="month" aria-selected="true">Месяц</button>
+        <button type="button" role="tab" data-view="year" aria-selected="false">Год</button>
+      </div>
+    </header>
+
+    <section class="hero" aria-live="polite">
+      <div class="hero-main">
+        <p class="hero-kicker" id="hero-kicker">Сегодня</p>
+        <p class="hero-date">
+          <span class="hero-day" id="hero-day">—</span>
+          <span class="hero-month" id="hero-month">—</span>
+          <span class="hero-year" id="hero-year"></span>
+        </p>
+        <p class="hero-weekday" id="hero-weekday">—</p>
+      </div>
+
+      <div class="hero-meta">
+        <div class="meta-row">
+          <span class="meta-label">Григорианский</span>
+          <span class="meta-value" id="hero-gregorian">—</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">День года</span>
+          <span class="meta-value" id="hero-doy">—</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">Неделя</span>
+          <span class="meta-value" id="hero-week">—</span>
+        </div>
+        <div class="meta-row">
+          <span class="meta-label">До конца года</span>
+          <span class="meta-value" id="hero-left">—</span>
+        </div>
+        <div class="progress" role="img" aria-label="Год пройден">
+          <div class="progress-bar" id="hero-progress"></div>
+        </div>
+        <div class="meta-foot">
+          <span class="clock" id="hero-clock">--:--:--</span>
+          <button type="button" class="link" id="back-today" hidden>вернуться к сегодня</button>
+        </div>
+      </div>
+    </section>
+
+    <main>
+      <section class="panel" id="panel-month" aria-label="Месяц">
+        <div class="panel-head">
+          <div class="nav">
+            <button type="button" class="nav-btn" id="prev-year" aria-label="Предыдущий год">«</button>
+            <button type="button" class="nav-btn" id="prev-period" aria-label="Предыдущий месяц">‹</button>
+          </div>
+          <h2 id="period-title">—</h2>
+          <div class="nav">
+            <button type="button" class="nav-btn" id="next-period" aria-label="Следующий месяц">›</button>
+            <button type="button" class="nav-btn" id="next-year" aria-label="Следующий год">»</button>
+          </div>
+        </div>
+
+        <div class="weekdays" id="weekdays"></div>
+        <div class="days" id="days"></div>
+        <p class="period-note" id="period-note"></p>
+      </section>
+
+      <section class="panel year-panel" id="panel-year" aria-label="Год" hidden>
+        <div class="panel-head">
+          <div class="nav">
+            <button type="button" class="nav-btn" id="year-prev" aria-label="Предыдущий год">«</button>
+          </div>
+          <div class="year-heading">
+            <h2 id="year-title">—</h2>
+            <p class="year-range" id="year-range"></p>
+          </div>
+          <div class="nav">
+            <button type="button" class="nav-btn" id="year-next" aria-label="Следующий год">»</button>
+          </div>
+        </div>
+        <div class="year-grid" id="year-grid"></div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="converter">
+        <label for="conv">Григорианская дата</label>
+        <input type="date" id="conv">
+        <span class="arrow" aria-hidden="true">→</span>
+        <output id="conv-out" for="conv">—</output>
+      </div>
+      <p class="footnote" id="footnote"></p>
+    </footer>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
