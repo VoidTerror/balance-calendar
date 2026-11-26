@@ -4,7 +4,7 @@
  */
 
 import { CONFIG } from "./config.js";
-import { createCalendar, civilToDayIndex, civilToISO } from "./engine.js";
+import { createCalendar, civilToDayIndex } from "./engine.js";
 
 const cal = createCalendar(CONFIG);
 const EXTRA = cal.EXTRA_PERIOD;
@@ -43,11 +43,6 @@ const escapeHtml = (value) =>
 const dateOf = (dayIndex) => new Date(dayIndex * DAY_MS);
 
 const yearLabel = (year) => `${year}-й год`;
-
-function formatCustom(info) {
-  if (info.isExtra) return `${info.extraName}, ${yearLabel(info.year)}`;
-  return `${info.day} ${info.monthName}, ${yearLabel(info.year)}`;
-}
 
 /* ── состояние ──────────────────────────────────────── */
 
@@ -93,9 +88,6 @@ const el = {
   yearTitle: $("year-title"),
   yearRange: $("year-range"),
   yearGrid: $("year-grid"),
-  conv: $("conv"),
-  convOut: $("conv-out"),
-  footnote: $("footnote"),
 };
 
 const weekdayInitials = cal.weekdays.map((name) => name.slice(0, 1).toUpperCase());
@@ -200,8 +192,7 @@ function renderMonth() {
     return;
   }
 
-  const quarter = cal.quarterName(period);
-  el.periodNote.textContent = `${quarter ? `${quarter} · ` : ""}${daysWord(count)} · ${rangeText}`;
+  el.periodNote.textContent = `${daysWord(count)} · ${rangeText}`;
 }
 
 /* ── рендер: год ────────────────────────────────────── */
@@ -243,17 +234,13 @@ function miniMonthCard(year, monthIndex) {
   const span = `${fmtShort.format(dateOf(start))} — ${fmtShort.format(
     dateOf(start + count - 1),
   )}`;
-  const quarter = cal.quarterName(monthIndex);
 
   return `
     <article class="mini">
-      <div class="mini-head">
-        <span class="mini-quarter">${escapeHtml(quarter ?? "")}</span>
+      <button type="button" class="mini-title" data-month="${monthIndex}">
+        <span class="mini-name">${escapeHtml(month.name)}</span>
         <span class="mini-range">${escapeHtml(span)}</span>
-      </div>
-      <button type="button" class="mini-title" data-month="${monthIndex}">${escapeHtml(
-        month.name,
-      )}</button>
+      </button>
       <div class="mini-weekdays">${miniWeekdays()}</div>
       <div class="mini-days">${cells.join("")}</div>
     </article>`;
@@ -465,38 +452,10 @@ function tick() {
   }
 }
 
-/* ── конвертер ──────────────────────────────────────── */
-
-function updateConverter() {
-  const match = /^(\d{4,})-(\d{2})-(\d{2})$/.exec(el.conv.value);
-  if (!match) {
-    el.convOut.textContent = "—";
-    return;
-  }
-  const info = cal.fromGregorian({
-    year: Number(match[1]),
-    month: Number(match[2]),
-    day: Number(match[3]),
-  });
-  const weekday = info.isExtra ? "вне недели" : info.weekdayName;
-  el.convOut.textContent = `${formatCustom(info)} · ${weekday}`;
-}
-
-el.conv.addEventListener("input", updateConverter);
-
 /* ── старт ──────────────────────────────────────────── */
 
 function init() {
   document.documentElement.style.setProperty("--cols", String(cal.weekLength));
-
-  el.footnote.textContent =
-    `Точка отсчёта: 1 ${cal.months[0].name} ${cal.config.epoch.year} года = ` +
-    `${fmtRangeYear.format(dateOf(cal.epochDayIndex))} · ` +
-    `выходные: ${cal.weekendDays.join(", ")} · ` +
-    `стрелки — листать, T — сегодня.`;
-
-  el.conv.value = civilToISO(cal.gregorianOf(state.today));
-  updateConverter();
 
   tick();
   render();

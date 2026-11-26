@@ -68,14 +68,6 @@ function validate(config) {
   if (!Array.isArray(config.months) || config.months.length === 0) {
     fail("months должен быть непустым массивом");
   }
-  if (config.quarters !== undefined) {
-    if (!Array.isArray(config.quarters) || config.quarters.length === 0) {
-      fail("quarters должен быть непустым массивом названий кварталов");
-    }
-    if (config.months.length % config.quarters.length !== 0) {
-      fail("число месяцев должно делиться на число кварталов");
-    }
-  }
   config.months.forEach((month, i) => {
     if (!month || typeof month.name !== "string" || !month.name.trim()) {
       fail(`у месяца №${i + 1} нет названия`);
@@ -123,12 +115,6 @@ export function createCalendar(config) {
   const months = config.months.map((m) => ({ name: m.name, days: m.days }));
   const monthCount = months.length;
 
-  const quarterNames = (config.quarters ?? []).slice();
-  const monthsPerQuarter = quarterNames.length ? monthCount / quarterNames.length : 0;
-  const quarterOfMonth = (monthIndex) =>
-    quarterNames.length ? Math.floor(monthIndex / monthsPerQuarter) : -1;
-  const quarterName = (monthIndex) =>
-    quarterNames.length ? quarterNames[quarterOfMonth(monthIndex)] : null;
   const monthOffsets = [0];
   for (const month of months) {
     monthOffsets.push(monthOffsets[monthOffsets.length - 1] + month.days);
@@ -331,10 +317,6 @@ export function createCalendar(config) {
     isWeekend,
     months,
     monthCount,
-    quarters: quarterNames,
-    monthsPerQuarter,
-    quarterOfMonth,
-    quarterName,
     extraLabel,
     EXTRA_PERIOD,
     hasExtraPeriod,

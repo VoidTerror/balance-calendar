@@ -23,20 +23,12 @@ test("эпоха: 1 Пролетник 1 года — это 2000-03-20", () => 
   assert.equal(date.iso, "2000-03-20");
 });
 
-test("восемь месяцев по 45 дней, по два на квартал", () => {
+test("восемь месяцев по 45 дней", () => {
   assert.deepEqual(
     cal.months.map((month) => month.name),
     ["Пролетник", "Травень", "Крестень", "Серпень", "Вересень", "Грудень", "Студень", "Лютень"],
   );
   cal.months.forEach((month) => assert.equal(month.days, 45));
-
-  assert.deepEqual(cal.quarters, ["I квартал", "II квартал", "III квартал", "IV квартал"]);
-  assert.equal(cal.monthsPerQuarter, 2);
-  assert.equal(cal.quarterName(0), "I квартал");
-  assert.equal(cal.quarterName(1), "I квартал");
-  assert.equal(cal.quarterName(2), "II квартал");
-  assert.equal(cal.quarterName(6), "IV квартал");
-  assert.equal(cal.quarterName(7), "IV квартал");
 });
 
 test("неделя из 9 дней, выходные — 1-й, 5-й и 9-й", () => {
@@ -91,7 +83,6 @@ test("сегодня: 26 ноября 2026 — 27 Грудня 27-го года"
   assert.equal(date.year, 27);
   assert.equal(date.monthName, "Грудень");
   assert.equal(date.monthIndex, 5);
-  assert.equal(cal.quarterName(date.monthIndex), "III квартал");
   assert.equal(date.day, 27);
   assert.equal(date.dayOfYear, 252);
   assert.equal(date.daysLeftInYear, 113);
