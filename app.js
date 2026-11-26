@@ -460,6 +460,7 @@ function applyStatic() {
   const description = document.querySelector('meta[name="description"]');
   if (description) description.setAttribute("content", t("metaDescription"));
 
+  el.convBtn.dataset.icon = t("convIcon");
   el.gregBtn.setAttribute("aria-pressed", String(state.showGreg));
 }
 

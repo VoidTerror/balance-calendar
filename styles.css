@@ -198,6 +198,10 @@ h1 {
   transition: border-color 0.16s, color 0.16s, background 0.16s;
 }
 
+.tool-btn::before {
+  content: attr(data-icon);
+}
+
 .tool-btn:hover {
   border-color: rgba(216, 180, 98, 0.55);
   color: var(--gold-2);
@@ -902,6 +906,10 @@ button.mini-cell:hover {
   font-size: 18px;
   line-height: 1;
   cursor: pointer;
+}
+
+.modal-close::before {
+  content: attr(data-icon);
 }
 
 .modal-close:hover {
