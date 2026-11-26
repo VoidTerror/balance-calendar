@@ -71,7 +71,7 @@ body {
 .app {
   position: relative;
   z-index: 1;
-  width: min(1240px, 100% - 32px);
+  width: min(2100px, 100% - 32px);
   margin: 0 auto;
   padding: 20px 0 26px;
 }
@@ -586,7 +586,7 @@ h1 {
 .mini-days {
   display: grid;
   grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
-  gap: 1px;
+  gap: 3px;
 }
 
 .mini-weekdays {
@@ -607,33 +607,37 @@ h1 {
 .mini-cell {
   display: grid;
   place-items: center;
-  height: 52px;
-  border-radius: 4px;
+  height: clamp(48px, min(3.4vw, 5.8vh), 64px);
+  border: 1px solid var(--line-soft);
+  border-radius: 6px;
+  background: rgba(11, 15, 24, 0.72);
   color: var(--ink-dim);
-  font-size: 20.5px;
+  font-size: clamp(20px, 1.2vw, 24px);
   font-variant-numeric: tabular-nums;
 }
 
 .mini-cell.is-rest {
-  color: #f2998d;
+  border-color: var(--red-line);
+  background: var(--red-soft);
+  color: var(--red-ink);
 }
 
 button.mini-cell {
   appearance: none;
-  border: 0;
-  background: transparent;
   font: inherit;
-  font-size: 20.5px;
+  font-size: clamp(20px, 1.2vw, 24px);
   cursor: pointer;
   padding: 0;
 }
 
 button.mini-cell:hover {
-  background: rgba(216, 180, 98, 0.16);
+  border-color: rgba(216, 180, 98, 0.45);
+  background: rgba(216, 180, 98, 0.14);
   color: var(--gold-2);
 }
 
 .mini-cell.is-today {
+  border-color: var(--gold);
   background: var(--gold);
   color: #171307;
   font-weight: 700;
@@ -724,8 +728,8 @@ button.mini-cell:hover {
 
   .mini-cell,
   button.mini-cell {
-    height: 52px;
-    font-size: 20px;
+    height: 54px;
+    font-size: 21px;
   }
 }
 
@@ -805,8 +809,8 @@ button.mini-cell:hover {
 
   .mini-cell,
   button.mini-cell {
-    height: 56px;
-    font-size: 21px;
+    height: 58px;
+    font-size: 22px;
   }
 }
 
