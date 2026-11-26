@@ -19,8 +19,10 @@ function moonPhase(dayIndex) {
   const fraction = age / SYNODIC_MONTH;
   const illumination = (1 - Math.cos(2 * Math.PI * fraction)) / 2;
   const index = Math.round(fraction * 8) % 8;
+  const isNew = age < 0.5 || age > SYNODIC_MONTH - 0.5;
+  const isFull = Math.abs(age - SYNODIC_MONTH / 2) < 0.5;
 
-  return { age, fraction, illumination, index };
+  return { age, fraction, illumination, index, isNew, isFull };
 }
 
 const moonSvg = (index) =>
@@ -33,6 +35,16 @@ const MOON_SHEET_ANCHOR_INDEX = 13;
 
 function moonSheet(year) {
   return mod(year - MOON_SHEET_ANCHOR_YEAR + MOON_SHEET_ANCHOR_INDEX - 1, MOON_CYCLE) + 1;
+}
+
+function solarKeyDays(year) {
+  const startYear = year - 1;
+  return new Set([
+    civilToDayIndex(startYear, 3, 20),
+    civilToDayIndex(startYear, 6, 21),
+    civilToDayIndex(startYear, 9, 22),
+    civilToDayIndex(startYear, 12, 21),
+  ]);
 }
 
 const EQUINOX_DAY = civilToDayIndex(2000, 3, 20);
@@ -96,7 +108,6 @@ const STRINGS = {
     moonSheet: "лист",
     gregTitle: "Даты по григорианскому календарю",
     gregIcon: "Г",
-    leapTitle: "Правило 128 лет",
     convIcon: "к",
     convLabel: "Григорианская дата",
     close: "Закрыть",
@@ -127,7 +138,6 @@ const STRINGS = {
     moonSheet: "sheet",
     gregTitle: "Gregorian dates",
     gregIcon: "G",
-    leapTitle: "128-year rule",
     convIcon: "c",
     convLabel: "Gregorian date",
     close: "Close",
@@ -171,12 +181,11 @@ function localToday() {
 
 const calendarCache = new Map();
 
-function getCalendar(lang, use128) {
-  const key = `${lang}:${use128 ? "128" : "4"}`;
-  if (!calendarCache.has(key)) {
-    calendarCache.set(key, createCalendar(localizedConfig(lang, use128)));
+function getCalendar(lang) {
+  if (!calendarCache.has(lang)) {
+    calendarCache.set(lang, createCalendar(localizedConfig(lang, true)));
   }
-  return calendarCache.get(key);
+  return calendarCache.get(lang);
 }
 
 const storedLang = readStored("uarza.lang", "ru");
@@ -187,14 +196,13 @@ const layers = ["greg", "moon", "sun", "none"];
 const state = {
   lang: ["ru", "en", "slav"].includes(storedLang) ? storedLang : "ru",
   layer: layers.includes(storedLayer) ? storedLayer : legacyGreg === "0" ? "none" : "greg",
-  use128: readStored("uarza.leap128", "1") === "1",
   year: 1,
   period: 0,
   selected: 0,
   today: localToday(),
 };
 
-let cal = getCalendar(state.lang, state.use128);
+let cal = getCalendar(state.lang);
 const EXTRA = cal.EXTRA_PERIOD;
 
 let fmtLong;
@@ -266,7 +274,6 @@ const el = {
   moonSheet: $("moon-sheet"),
   yearGrid: $("year-grid"),
   gregBtn: $("greg-btn"),
-  leapBtn: $("leap-btn"),
   moonBtn: $("moon-btn"),
   sunBtn: $("sun-btn"),
   infoBtn: $("info-btn"),
@@ -363,10 +370,13 @@ function renderMonth() {
   el.weekdays.hidden = isBalance;
   el.days.classList.toggle("is-balance", isBalance);
   el.days.classList.toggle("has-glyph", state.layer === "moon" || state.layer === "sun");
+  el.days.classList.toggle("show-moon", state.layer === "moon");
+  el.days.classList.toggle("show-sun", state.layer === "sun");
 
   const start = cal.periodStart(year, period);
   const count = cal.periodLength(year, period);
   const blanks = isBalance ? 0 : cal.fromDayIndex(start).weekdayIndex;
+  const solarKeys = solarKeyDays(year);
 
   const cells = [];
   for (let i = 0; i < blanks; i += 1) {
@@ -379,6 +389,10 @@ function renderMonth() {
     const classes = ["cell"];
     if (info.isExtra) classes.push("is-extra");
     if (info.isWeekend) classes.push("is-rest");
+    const phase = moonPhase(dayIndex);
+    if (phase.isNew) classes.push("is-newmoon");
+    if (phase.isFull) classes.push("is-fullmoon");
+    if (solarKeys.has(dayIndex)) classes.push("is-solar-key");
     if (dayIndex === state.today) classes.push("is-today");
     if (dayIndex === state.selected) classes.push("is-selected");
 
@@ -423,7 +437,7 @@ function miniWeekdays() {
     .join("");
 }
 
-function miniMonthCard(year, monthIndex) {
+function miniMonthCard(year, monthIndex, solarKeys) {
   const month = cal.months[monthIndex];
   const start = cal.periodStart(year, monthIndex);
   const count = cal.periodLength(year, monthIndex);
@@ -440,6 +454,10 @@ function miniMonthCard(year, monthIndex) {
     const info = cal.fromDayIndex(dayIndex);
     const classes = ["mini-cell"];
     if (info.isWeekend) classes.push("is-rest");
+    const phase = moonPhase(dayIndex);
+    if (phase.isNew) classes.push("is-newmoon");
+    if (phase.isFull) classes.push("is-fullmoon");
+    if (solarKeys.has(dayIndex)) classes.push("is-solar-key");
     if (dayIndex === state.today) classes.push("is-today");
     if (dayIndex === state.selected) classes.push("is-selected");
     cells.push(
@@ -527,8 +545,10 @@ function renderYear() {
     el.moonSheet.textContent = `${t("moonSheet")} ${moonSheet(year)}/${MOON_CYCLE}`;
   }
 
-  const months = cal.months.map((_, monthIndex) => miniMonthCard(year, monthIndex)).join("");
-
+  const solarKeys = solarKeyDays(year);
+  const months = cal.months
+    .map((_, monthIndex) => miniMonthCard(year, monthIndex, solarKeys))
+    .join("");
   el.yearGrid.classList.toggle("show-greg", state.layer === "greg");
   el.yearGrid.classList.toggle("show-moon", state.layer === "moon");
   el.yearGrid.classList.toggle("show-sun", state.layer === "sun");
@@ -583,14 +603,13 @@ function applyStatic() {
   el.gregBtn.setAttribute("aria-pressed", String(state.layer === "greg"));
   el.moonBtn.setAttribute("aria-pressed", String(state.layer === "moon"));
   el.sunBtn.setAttribute("aria-pressed", String(state.layer === "sun"));
-  el.leapBtn.setAttribute("aria-pressed", String(state.use128));
 }
 
 function setLang(lang) {
   if (!["ru", "en", "slav"].includes(lang)) return;
 
   state.lang = lang;
-  cal = getCalendar(state.lang, state.use128);
+  cal = getCalendar(state.lang);
   buildFormatters();
   store("uarza.lang", lang);
   applyStatic();
@@ -603,15 +622,6 @@ function setLayer(layer) {
 
   state.layer = state.layer === layer ? "none" : layer;
   store("uarza.layer", state.layer);
-  applyStatic();
-  render();
-}
-
-function setLeap128(on) {
-  state.use128 = on;
-  store("uarza.leap128", on ? "1" : "0");
-  cal = getCalendar(state.lang, state.use128);
-  syncTo(state.selected);
   applyStatic();
   render();
 }
@@ -741,7 +751,6 @@ document.querySelectorAll(".lang-switch button").forEach((button) => {
 });
 
 el.gregBtn.addEventListener("click", () => setLayer("greg"));
-el.leapBtn.addEventListener("click", () => setLeap128(!state.use128));
 el.moonBtn.addEventListener("click", () => setLayer("moon"));
 el.sunBtn.addEventListener("click", () => setLayer("sun"));
 el.infoBtn.addEventListener("click", () => openDialog(el.infoDialog));

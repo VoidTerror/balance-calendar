@@ -7,7 +7,7 @@
   <meta name="description" content="Уарзианский календарь: 8 месяцев по 45 дней, 9-дневная неделя, выходные 1/5/9 и дни баланса. Григорианская дата рядом с каждой датой.">
   <meta name="theme-color" content="#070910">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0e18'/%3E%3Cpath d='M32 10l4.6 14.2L51 29l-14.4 4.8L32 48l-4.6-14.2L13 29l14.4-4.8z' fill='%23d8b462'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="styles.css?v=20261126">
+  <link rel="stylesheet" href="styles.css?v=20261127">
 </head>
 <body>
   <div class="backdrop" aria-hidden="true"></div>
@@ -36,7 +36,11 @@
   <div class="app">
     <header class="masthead">
       <div class="brand">
-        <span class="sigil" aria-hidden="true">✦</span>
+        <span class="sigil" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20" focusable="false">
+            <path d="M12 2 L13.6 8.12 L19.07 4.93 L15.88 10.39 L22 12 L15.88 13.61 L19.07 19.07 L13.61 15.88 L12 22 L10.39 15.88 L4.93 19.07 L8.12 13.61 L2 12 L8.12 10.39 L4.93 4.93 L10.39 8.12 Z" fill="currentColor"/>
+          </svg>
+        </span>
         <h1 id="app-title" data-i18n="appTitle">Календарь Уарза</h1>
         <div class="brand-tools">
           <button type="button" class="tool-btn" id="info-btn" aria-label="О календаре" data-i18n-title="infoTitle" data-icon="i"></button>
@@ -56,7 +60,6 @@
       <div class="controls">
         <div class="calendar-tools">
           <button type="button" class="tool-btn" id="greg-btn" aria-pressed="true" aria-label="Даты по григорианскому календарю" data-i18n-title="gregTitle" data-icon="Г"></button>
-          <button type="button" class="tool-btn" id="leap-btn" aria-pressed="true" aria-label="Правило 128 лет" data-i18n-title="leapTitle" data-icon="128"></button>
           <button type="button" class="tool-btn" id="moon-btn" aria-pressed="false" aria-label="Лунные фазы" data-i18n-title="moonTitle" data-icon="☾"></button>
           <button type="button" class="tool-btn" id="sun-btn" aria-pressed="false" aria-label="Долгота дня" data-i18n-title="sunTitle" data-icon="☼"></button>
         </div>
@@ -128,16 +131,16 @@
       <div class="i18n" lang="ru">
         <p><strong>Уарзианский календарь (UC)</strong> — 8 месяцев по 45 дней, вечная 9-дневная неделя с ритмом 3-1-3-2 и 5 Дней Баланса вне недель (6 в високосный год). Год начинается в мартовское равноденствие; дни баланса идут под нулевым индексом месяца (00).</p>
         <p>Нумерация как в спецификации: год 2001 начинается 20 марта 2000 и заканчивается 19 марта 2001. Три ряда названий: метрический русский (Унар…Октар), международный (Unar…Octar) и славянский (Пролетник…Лютень) — переключаются кнопками РУС / ENG / СЛАВ.</p>
-        <p>Високосный год добавляет шестой День Баланса. Кнопка «128» включает правило: каждый 4-й год, кроме кратных 128 (31 високосный год на 128 лет, средняя длина года 365,2421875 суток).</p>
-        <p>Луна: 19-летний цикл Метона (235 лунных месяцев) — 19 листов. Кнопка ☾ рисует фазы, посчитанные по синодическому месяцу 29,530588853 дня от новолуния 6 января 2000 года; это астрономическое приближение, для точного совпадения с листами нужна таблица фаз. Для примера: 2027 год — лист 13 из 19, 2028 — 14-й.</p>
-        <p>Солнце: кнопка ☼ показывает нормированную долю дня — пустой кружок в самый короткий день, полный в самый длинный, половина в равноденствие. Считается по фазе года от мартовского равноденствия.</p>
+        <p>Високосный год добавляет шестой День Баланса. Правило 128 лет применяется всегда: каждый 4-й год, кроме кратных 128 (31 високосный год на 128 лет, средняя длина года 365,2421875 суток).</p>
+        <p>Луна: 19-летний цикл Метона (235 лунных месяцев) — 19 листов. Кнопка ☾ рисует фазы, посчитанные по синодическому месяцу 29,530588853 дня от новолуния 6 января 2000 года; новолуния и полнолуния обведены белым. Это астрономическое приближение, для точного совпадения с листами нужна таблица фаз. Для примера: 2027 год — лист 13 из 19, 2028 — 14-й.</p>
+        <p>Солнце: кнопка ☼ показывает нормированную долю дня — пустой кружок в самый короткий день, полный в самый длинный, половина в равноденствие. Равноденствия и солнцестояния обведены белым. Считается по фазе года от мартовского равноденствия.</p>
       </div>
       <div class="i18n" lang="en">
         <p><strong>The Uarzian Calendar (UC)</strong> — 8 months of 45 days, an eternal 9-day week with a 3-1-3-2 rhythm and 5 Balance Days outside the weeks (6 in a leap year). The year starts at the March equinox; balance days use month index 00.</p>
         <p>Year numbering follows the spec: year 2001 starts on 20 March 2000 and ends on 19 March 2001. Three naming rows — Russian metric (Унар…Октар), international (Unar…Octar) and Slavic (Пролетник…Лютень) — switch with РУС / ENG / СЛАВ.</p>
-        <p>A leap year adds a sixth Balance Day. The “128” button enables the rule: every 4th year except multiples of 128 (31 leap years per 128, mean year 365.2421875 days).</p>
-        <p>Moon: 19-year Metonic cycle (235 lunar months) — 19 sheets. The ☾ button draws phases computed from the 29.530588853-day synodic month since the new moon of 6 January 2000; this is an astronomical approximation, and the 19 sheets require a phase table for an exact match. For example: 2027 is sheet 13 of 19, 2028 is 14.</p>
-        <p>Sun: the ☼ button shows a normalized daylight fraction — an empty circle on the shortest day, a full one on the longest, half at the equinox. It is derived from the year phase measured from the March equinox.</p>
+        <p>A leap year adds a sixth Balance Day. The 128-year rule is always on: every 4th year except multiples of 128 (31 leap years per 128, mean year 365.2421875 days).</p>
+        <p>Moon: 19-year Metonic cycle (235 lunar months) — 19 sheets. The ☾ button draws phases computed from the 29.530588853-day synodic month since the new moon of 6 January 2000; new and full moons get a white outline. This is an astronomical approximation, and the 19 sheets require a phase table for an exact match. For example: 2027 is sheet 13 of 19, 2028 is 14.</p>
+        <p>Sun: the ☼ button shows a normalized daylight fraction — an empty circle on the shortest day, a full one on the longest, half at the equinox. Equinoxes and solstices get a white outline. It is derived from the year phase measured from the March equinox.</p>
       </div>
     </div>
   </dialog>
@@ -157,6 +160,6 @@
     </div>
   </dialog>
 
-  <script type="module" src="app.js?v=20261126"></script>
+  <script type="module" src="app.js?v=20261127"></script>
 </body>
 </html>
