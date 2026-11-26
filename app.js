@@ -418,9 +418,10 @@ function renderMonth() {
     ? `${fmtRange.format(dateOf(start))} — ${fmtRangeYear.format(dateOf(lastIndex))}`
     : `${fmtRangeYear.format(dateOf(start))} — ${fmtRangeYear.format(dateOf(lastIndex))}`;
 
+  const showRange = state.layer === "greg";
   el.periodNote.textContent = isBalance
-    ? `${daysWord(count)} ${t("betweenYears")} · ${rangeText}`
-    : `${daysWord(count)} · ${rangeText}`;
+    ? `${daysWord(count)} ${t("betweenYears")}${showRange ? ` · ${rangeText}` : ""}`
+    : `${daysWord(count)}${showRange ? ` · ${rangeText}` : ""}`;
 }
 
 /* ── рендер: год ────────────────────────────────────── */
