@@ -4,7 +4,7 @@
  */
 
 import { localizedConfig } from "./config.js";
-import { createCalendar, civilToDayIndex, civilToISO, mod } from "./engine.js";
+import { createCalendar, civilToDayIndex, civilToISO, dayIndexToCivil, mod } from "./engine.js";
 
 const DAY_MS = 86_400_000;
 
@@ -37,22 +37,160 @@ function moonSheet(year) {
   return mod(year - MOON_SHEET_ANCHOR_YEAR + MOON_SHEET_ANCHOR_INDEX - 1, MOON_CYCLE) + 1;
 }
 
-function solarKeyDays(year) {
-  const startYear = year - 1;
-  return new Set([
-    civilToDayIndex(startYear, 3, 20),
-    civilToDayIndex(startYear, 6, 21),
-    civilToDayIndex(startYear, 9, 22),
-    civilToDayIndex(startYear, 12, 21),
-  ]);
+function moonPhaseName(dayIndex) {
+  const phase = moonPhase(dayIndex);
+  const names = t("moonPhases");
+  return `${names[phase.index]} · ${Math.round(phase.illumination * 100)}%`;
 }
 
-const EQUINOX_DAY = civilToDayIndex(2000, 3, 20);
-const TROPICAL_YEAR = 365.2422;
+/* ── солнечный слой ─────────────────────────────────── */
+
+// Даты равноденствий и солнцестояний считаются по алгоритму Миуса
+// (Astronomical Algorithms, гл. 27): сезонные точки — глобальные события,
+// но их календарная дата зависит от часового пояса наблюдателя.
+const DEG = Math.PI / 180;
+const SEASON_KEYS = ["springEquinox", "summerSolstice", "autumnEquinox", "winterSolstice"];
+const SEASON_VALUES = [0.5, 1, 0.5, 0];
+
+const SEASON_POLY = [
+  (Y) => 2451623.80984 + Y * (365242.37404 + Y * (0.05169 + Y * (-0.00411 - 0.00057 * Y))),
+  (Y) => 2451716.56767 + Y * (365241.62603 + Y * (0.00325 + Y * (0.00888 - 0.0003 * Y))),
+  (Y) => 2451810.21715 + Y * (365242.01767 + Y * (-0.11575 + Y * (0.00337 + Y * 0.00078))),
+  (Y) => 2451900.05952 + Y * (365242.74049 + Y * (-0.06223 + Y * (-0.00823 + Y * 0.00032))),
+];
+
+const SEASON_TERMS = [
+  [485, 324.96, 1934.136],
+  [203, 337.23, 32964.467],
+  [199, 342.08, 20.186],
+  [182, 27.85, 445267.112],
+  [156, 73.14, 45036.886],
+  [136, 171.52, 22518.443],
+  [77, 222.54, 65928.934],
+  [74, 296.72, 3034.906],
+  [70, 243.58, 9037.513],
+  [58, 119.81, 33718.147],
+  [52, 297.17, 150.678],
+  [50, 21.02, 2281.226],
+  [45, 247.54, 29929.562],
+  [44, 325.15, 31555.956],
+  [29, 60.93, 4443.417],
+  [18, 155.12, 67555.328],
+  [17, 288.79, 4562.452],
+  [16, 198.04, 62894.029],
+  [14, 199.76, 31436.921],
+  [12, 95.39, 14577.848],
+  [12, 287.11, 31931.756],
+  [12, 320.81, 34777.259],
+  [9, 227.73, 1222.114],
+  [8, 15.45, 16859.074],
+];
+
+// Разница TT и UT в секундах (приближение NASA для 1986–2150).
+function deltaTSeconds(year) {
+  if (year >= 2005 && year < 2050) {
+    const t = year - 2000;
+    return 62.92 + 0.32217 * t + 0.005589 * t * t;
+  }
+  if (year >= 1986 && year < 2005) {
+    const t = year - 2000;
+    return 63.86 + t * (0.3345 + t * (-0.060374 + t * (0.0017275 + t * (0.000651814 + t * 0.00002373599))));
+  }
+  if (year >= 2050 && year < 2150) {
+    return -20 + 32 * ((year - 1820) / 100) ** 2 - 0.5628 * (2150 - year);
+  }
+  return -20 + 32 * ((year - 1820) / 100) ** 2;
+}
+
+function seasonDate(gregorianYear, index) {
+  const Y = (gregorianYear - 2000) / 1000;
+  const jde0 = SEASON_POLY[index](Y);
+  const T = (jde0 - 2451545) / 36525;
+  const W = (35999.373 * T - 2.47) * DEG;
+  const dLambda = 1 + 0.0334 * Math.cos(W) + 0.0007 * Math.cos(2 * W);
+
+  let S = 0;
+  for (const [a, b, c] of SEASON_TERMS) S += a * Math.cos((b + c * T) * DEG);
+
+  const jde = jde0 + (0.00001 * S) / dLambda;
+  const ms = (jde - 2440587.5) * DAY_MS - deltaTSeconds(gregorianYear) * 1000;
+  return new Date(ms);
+}
+
+const solarEventsCache = new Map();
+
+function solarEvents(gregorianYear) {
+  if (solarEventsCache.has(gregorianYear)) return solarEventsCache.get(gregorianYear);
+
+  const events = SEASON_KEYS.map((key, index) => {
+    const date = seasonDate(gregorianYear, index);
+    return {
+      key,
+      value: SEASON_VALUES[index],
+      dayIndex: civilToDayIndex(date.getFullYear(), date.getMonth() + 1, date.getDate()),
+    };
+  });
+
+  solarEventsCache.set(gregorianYear, events);
+  return events;
+}
+
+const solarKeyCache = new Map();
+
+function solarKeyMap(year) {
+  if (solarKeyCache.has(year)) return solarKeyCache.get(year);
+
+  const start = cal.yearStartDay(year);
+  const end = cal.yearStartDay(year + 1) - 1;
+  const map = new Map();
+  const firstYear = dayIndexToCivil(start).year;
+  const lastYear = dayIndexToCivil(end).year;
+
+  for (let gregorianYear = firstYear; gregorianYear <= lastYear; gregorianYear += 1) {
+    for (const event of solarEvents(gregorianYear)) {
+      if (event.dayIndex >= start && event.dayIndex <= end) map.set(event.dayIndex, event);
+    }
+  }
+
+  solarKeyCache.set(year, map);
+  return map;
+}
+
+function solarDayLabel(dayIndex, event) {
+  const percent = Math.round(daylightFraction(dayIndex) * 100);
+  const name = event ? t(event.key) : "";
+  return `${name ? `${name} · ` : ""}${t("daylight")} ${percent}%`;
+}
 
 function daylightFraction(dayIndex) {
-  const phase = mod(dayIndex - EQUINOX_DAY, TROPICAL_YEAR) / TROPICAL_YEAR;
-  return 0.5 + 0.5 * Math.sin(2 * Math.PI * phase);
+  const gregorianYear = dayIndexToCivil(dayIndex).year;
+  const points = [];
+
+  for (let year = gregorianYear - 1; year <= gregorianYear + 1; year += 1) {
+    for (const event of solarEvents(year)) {
+      points.push({ day: event.dayIndex, value: event.value });
+    }
+  }
+
+  points.sort((a, b) => a.day - b.day);
+
+  let index = points.length - 2;
+  for (let i = 0; i < points.length - 1; i += 1) {
+    if (dayIndex >= points[i].day && dayIndex < points[i + 1].day) {
+      index = i;
+      break;
+    }
+  }
+
+  const start = points[index];
+  const end = points[index + 1];
+  const span = end.day - start.day;
+  if (span <= 0) return start.value;
+
+  const t = (dayIndex - start.day) / span;
+  const smooth = (1 - Math.cos(Math.PI * t)) / 2;
+
+  return start.value + (end.value - start.value) * smooth;
 }
 
 function sunSvg(fraction) {
@@ -120,6 +258,21 @@ const STRINGS = {
     monthPanelLabel: "Месяц",
     yearPanelLabel: "Год",
     betweenYears: "между годами",
+    moonPhases: [
+      "новолуние",
+      "растущий серп",
+      "первая четверть",
+      "растущая Луна",
+      "полнолуние",
+      "убывающая Луна",
+      "последняя четверть",
+      "убывающий серп",
+    ],
+    daylight: "доля дня",
+    springEquinox: "весеннее равноденствие",
+    summerSolstice: "летнее солнцестояние",
+    autumnEquinox: "осеннее равноденствие",
+    winterSolstice: "зимнее солнцестояние",
     metaDescription:
       "Уарзианский календарь: 8 месяцев по 45 дней, 9-дневная неделя, выходные 1/5/9 и дни баланса. Григорианская дата рядом с каждой датой.",
   },
@@ -152,6 +305,21 @@ const STRINGS = {
     monthPanelLabel: "Month",
     yearPanelLabel: "Year",
     betweenYears: "between years",
+    moonPhases: [
+      "new moon",
+      "waxing crescent",
+      "first quarter",
+      "waxing gibbous",
+      "full moon",
+      "waning gibbous",
+      "last quarter",
+      "waning crescent",
+    ],
+    daylight: "daylight",
+    springEquinox: "spring equinox",
+    summerSolstice: "summer solstice",
+    autumnEquinox: "autumn equinox",
+    winterSolstice: "winter solstice",
     metaDescription:
       "The Uarzian Calendar: 8 months of 45 days, a 9-day week, weekends 1/5/9 and balance days. Gregorian date next to every date.",
   },
@@ -347,12 +515,21 @@ function renderWeekdays() {
 }
 
 function cellTitle(info) {
+  let title;
   if (info.isExtra) {
-    return `${info.extraName}, ${yearLabel(info.year)} · ${fmtLong.format(dateOf(info.dayIndex))}`;
+    title = `${info.extraName}, ${yearLabel(info.year)} · ${fmtLong.format(dateOf(info.dayIndex))}`;
+  } else {
+    title = `${info.day} ${info.monthName}, ${yearLabel(info.year)} · ${info.weekdayName} · ${fmtLong.format(
+      dateOf(info.dayIndex),
+    )}`;
   }
-  return `${info.day} ${info.monthName}, ${yearLabel(info.year)} · ${info.weekdayName} · ${fmtLong.format(
-    dateOf(info.dayIndex),
-  )}`;
+
+  if (state.layer === "moon") title += ` · ${moonPhaseName(info.dayIndex)}`;
+  if (state.layer === "sun") {
+    title += ` · ${solarDayLabel(info.dayIndex, solarKeyMap(info.year).get(info.dayIndex))}`;
+  }
+
+  return title;
 }
 
 function cellGlyph(dayIndex) {
@@ -383,7 +560,7 @@ function renderMonth() {
   const start = cal.periodStart(year, period);
   const count = cal.periodLength(year, period);
   const blanks = isBalance ? 0 : cal.fromDayIndex(start).weekdayIndex;
-  const solarKeys = solarKeyDays(year);
+  const solarKeys = solarKeyMap(year);
 
   const cells = [];
   for (let i = 0; i < blanks; i += 1) {
@@ -497,23 +674,36 @@ function balanceStrip(year) {
   const chips = entries
     .map((entry) => {
       const classes = entry.dayIndex === state.today ? "is-today" : "";
+      const glyph =
+        state.layer === "moon"
+          ? moonSvg(moonPhase(entry.dayIndex).index)
+          : state.layer === "sun"
+            ? sunSvg(daylightFraction(entry.dayIndex))
+            : "";
+      const date =
+        state.layer === "greg"
+          ? `<span class="balance-chip-date">${escapeHtml(fmtShort.format(dateOf(entry.dayIndex)))}</span>`
+          : "";
       return `<button type="button" class="${classes}" data-balance="1" data-balance-day="${entry.dayIndex}"
-        title="${escapeHtml(cellTitle(cal.fromDayIndex(entry.dayIndex)))}">${escapeHtml(
+        title="${escapeHtml(cellTitle(cal.fromDayIndex(entry.dayIndex)))}"><span class="balance-chip-text"><span class="balance-chip-name">${escapeHtml(
           entry.name,
-        )}</button>`;
+        )}</span>${date}</span>${glyph ? `<span class="balance-chip-glyph" aria-hidden="true">${glyph}</span>` : ""}</button>`;
     })
     .join("");
 
   const range = `${fmtShort.format(dateOf(entries[0].dayIndex))} — ${fmtShort.format(
     dateOf(entries.at(-1).dayIndex),
   )}`;
+  const showRange = state.layer === "greg";
 
   return `
     <div class="balance-strip">
       <button type="button" class="balance-label" data-balance="1">${escapeHtml(
         cal.extraLabel,
       )}</button>
-      <span class="balance-range">${daysWord(entries.length)} · ${escapeHtml(range)}</span>
+      <span class="balance-range">${daysWord(entries.length)}${
+        showRange ? ` · ${escapeHtml(range)}` : ""
+      }</span>
       <div class="balance-chips">${chips}</div>
     </div>`;
 }
@@ -525,14 +715,33 @@ function renderBalance() {
   el.balanceTitle.textContent = `${cal.extraLabel} · ${yearLabel(year)}`;
   el.balanceList.innerHTML = entries
     .map((entry) => {
+      const info = cal.fromDayIndex(entry.dayIndex);
       const classes = ["balance-card"];
       if (entry.dayIndex === state.today) classes.push("is-today");
       if (entry.dayIndex === state.selected) classes.push("is-selected");
-      return `<button type="button" class="${classes.join(" ")}" data-balance-day="${entry.dayIndex}">
-        <span class="balance-card-name">${escapeHtml(entry.name)}</span>
-        <span class="balance-card-date">${escapeHtml(
+
+      let meta = "";
+      if (state.layer === "greg") {
+        meta = `<span class="balance-card-date">${escapeHtml(
           fmtLong.format(dateOf(entry.dayIndex)),
-        )}</span>
+        )}</span>`;
+      } else if (state.layer === "moon") {
+        meta = `<span class="balance-card-meta" aria-hidden="true">${moonSvg(
+          moonPhase(entry.dayIndex).index,
+        )}<span>${escapeHtml(moonPhaseName(entry.dayIndex))}</span></span>`;
+      } else if (state.layer === "sun") {
+        meta = `<span class="balance-card-meta" aria-hidden="true">${sunSvg(
+          daylightFraction(entry.dayIndex),
+        )}<span>${escapeHtml(
+          solarDayLabel(entry.dayIndex, solarKeyMap(year).get(entry.dayIndex)),
+        )}</span></span>`;
+      }
+
+      const label = cellTitle(info);
+      return `<button type="button" class="${classes.join(" ")}" data-balance-day="${
+        entry.dayIndex
+      }" title="${escapeHtml(label)}" aria-label="${escapeHtml(label)}">
+        <span class="balance-card-name">${escapeHtml(entry.name)}</span>${meta}
       </button>`;
     })
     .join("");
@@ -553,7 +762,7 @@ function renderYear() {
     el.moonSheet.textContent = `${t("moonSheet")} ${moonSheet(year)}/${MOON_CYCLE}`;
   }
 
-  const solarKeys = solarKeyDays(year);
+  const solarKeys = solarKeyMap(year);
   const months = cal.months
     .map((_, monthIndex) => miniMonthCard(year, monthIndex, solarKeys))
     .join("");

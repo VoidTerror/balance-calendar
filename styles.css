@@ -842,6 +842,38 @@ html[data-theme="light"] .theme-btn svg {
   box-shadow: var(--key-shadow-strong);
 }
 
+/* На ключевых днях показываем григорианскую дату и в слоях Луны/Солнца,
+   чтобы событие нельзя было спутать с соседним днём. */
+.show-moon .mini-cell.is-newmoon::after,
+.show-moon .mini-cell.is-fullmoon::after,
+.show-sun .mini-cell.is-solar-key::after {
+  display: block;
+}
+
+.show-moon .mini-cell.is-today::after,
+.show-sun .mini-cell.is-today::after {
+  color: rgba(23, 19, 7, 0.7);
+}
+
+.show-moon .mini-cell.is-newmoon,
+.show-moon .mini-cell.is-fullmoon,
+.show-sun .mini-cell.is-solar-key {
+  font-size: clamp(12px, 0.8vw, 15px);
+}
+
+.show-moon .mini-cell.is-newmoon .cell-glyph svg,
+.show-moon .mini-cell.is-fullmoon .cell-glyph svg,
+.show-sun .mini-cell.is-solar-key .cell-glyph svg {
+  width: 16px;
+  height: 16px;
+}
+
+.days.has-glyph .cell.is-newmoon::before,
+.days.has-glyph .cell.is-fullmoon::before,
+.days.has-glyph .cell.is-solar-key::before {
+  content: attr(data-greg);
+}
+
 .mini-cell.is-today .cell-glyph svg,
 .cell.is-today .cell-glyph svg {
   filter: brightness(0.5);
@@ -929,6 +961,9 @@ button.mini-cell:hover {
 
 .balance-chips button {
   appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   min-height: 26px;
   padding: 3px 9px;
   border: 1px solid var(--violet-line);
@@ -939,6 +974,30 @@ button.mini-cell:hover {
   font-size: 10.5px;
   letter-spacing: 0.03em;
   cursor: pointer;
+}
+
+.balance-chip-glyph {
+  display: flex;
+  align-items: center;
+}
+
+.balance-chip-glyph svg {
+  width: 13px;
+  height: 13px;
+}
+
+.balance-chip-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  line-height: 1.05;
+}
+
+.balance-chip-date {
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.02em;
 }
 
 .balance-chips button:hover {
@@ -1028,6 +1087,21 @@ button.mini-cell:hover {
   margin-top: 3px;
   color: var(--muted);
   font-size: 10.5px;
+}
+
+.balance-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10.5px;
+}
+
+.balance-card-meta svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
 }
 
 .balance-card.is-today {
