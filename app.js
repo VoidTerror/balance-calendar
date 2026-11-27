@@ -66,9 +66,9 @@ function sunSvg(fraction) {
 
   let fill = "";
   if (value >= 0.999) {
-    fill = `<circle cx="${c}" cy="${c}" r="${r}" fill="#f2d79b"/>`;
+    fill = `<circle cx="${c}" cy="${c}" r="${r}" style="fill: var(--sun-fill, #f2d79b)"/>`;
   } else if (value > 0.001) {
-    fill = `<path d="M${c} ${c} L${c} ${c - r} A${r} ${r} 0 ${large} 1 ${x} ${y} Z" fill="#f2d79b"/>`;
+    fill = `<path d="M${c} ${c} L${c} ${c - r} A${r} ${r} 0 ${large} 1 ${x} ${y} Z" style="fill: var(--sun-fill, #f2d79b)"/>`;
   }
 
   const rays = Array.from({ length: 8 }, (_, i) => {
@@ -81,10 +81,10 @@ function sunSvg(fraction) {
   }).join("");
 
   return `<svg class="glyph" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-    <g stroke="#8a6f33" stroke-width="1" stroke-linecap="round">${rays}</g>
-    <circle cx="${c}" cy="${c}" r="${r}" fill="rgba(8, 10, 16, 0.7)"/>
+    <g style="stroke: var(--sun-line, #8a6f33)" stroke-width="1" stroke-linecap="round">${rays}</g>
+    <circle cx="${c}" cy="${c}" r="${r}" style="fill: var(--sun-base, rgba(8, 10, 16, 0.7))"/>
     ${fill}
-    <circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="#8a6f33" stroke-width="1"/>
+    <circle cx="${c}" cy="${c}" r="${r}" fill="none" style="stroke: var(--sun-line, #8a6f33)" stroke-width="1"/>
   </svg>`;
 }
 
@@ -106,6 +106,8 @@ const STRINGS = {
     moonTitle: "Лунные фазы",
     sunTitle: "Долгота дня",
     moonSheet: "лист",
+    themeToDark: "Тёмная тема",
+    themeToLight: "Светлая тема",
     gregTitle: "Даты по григорианскому календарю",
     gregIcon: "Г",
     convIcon: "к",
@@ -136,6 +138,8 @@ const STRINGS = {
     moonTitle: "Moon phases",
     sunTitle: "Daylight",
     moonSheet: "sheet",
+    themeToDark: "Dark theme",
+    themeToLight: "Light theme",
     gregTitle: "Gregorian dates",
     gregIcon: "G",
     convIcon: "c",
@@ -190,12 +194,14 @@ function getCalendar(lang) {
 
 const storedLang = readStored("uarza.lang", "ru");
 const storedLayer = readStored("uarza.layer", null);
+const storedTheme = readStored("uarza.theme", "light");
 const legacyGreg = readStored("uarza.greg", null);
 const layers = ["greg", "moon", "sun", "none"];
 
 const state = {
   lang: ["ru", "en", "slav"].includes(storedLang) ? storedLang : "ru",
   layer: layers.includes(storedLayer) ? storedLayer : legacyGreg === "0" ? "none" : "greg",
+  theme: storedTheme === "dark" ? "dark" : "light",
   year: 1,
   period: 0,
   selected: 0,
@@ -276,6 +282,7 @@ const el = {
   gregBtn: $("greg-btn"),
   moonBtn: $("moon-btn"),
   sunBtn: $("sun-btn"),
+  themeBtn: $("theme-btn"),
   infoBtn: $("info-btn"),
   convBtn: $("conv-btn"),
   monthDialog: $("month-dialog"),
@@ -596,6 +603,17 @@ function applyStatic() {
     button.setAttribute("aria-pressed", String(button.dataset.lang === state.lang));
   });
 
+  const themeLabel = t(state.theme === "light" ? "themeToDark" : "themeToLight");
+  document.documentElement.dataset.theme = state.theme;
+  el.themeBtn.title = themeLabel;
+  el.themeBtn.setAttribute("aria-label", themeLabel);
+  el.themeBtn.dataset.theme = state.theme;
+
+  const themeColor = document.querySelector('meta[name="theme-color"]');
+  if (themeColor) {
+    themeColor.setAttribute("content", state.theme === "light" ? "#f4efe4" : "#070910");
+  }
+
   const description = document.querySelector('meta[name="description"]');
   if (description) description.setAttribute("content", t("metaDescription"));
 
@@ -625,6 +643,12 @@ function setLayer(layer) {
   store("uarza.layer", state.layer);
   applyStatic();
   render();
+}
+
+function setTheme(theme) {
+  state.theme = theme === "dark" ? "dark" : "light";
+  store("uarza.theme", state.theme);
+  applyStatic();
 }
 
 /* ── диалоги ────────────────────────────────────────── */
@@ -754,6 +778,7 @@ document.querySelectorAll(".lang-switch button").forEach((button) => {
 el.gregBtn.addEventListener("click", () => setLayer("greg"));
 el.moonBtn.addEventListener("click", () => setLayer("moon"));
 el.sunBtn.addEventListener("click", () => setLayer("sun"));
+el.themeBtn.addEventListener("click", () => setTheme(state.theme === "light" ? "dark" : "light"));
 el.infoBtn.addEventListener("click", () => openDialog(el.infoDialog));
 
 el.convBtn.addEventListener("click", () => {

@@ -1,13 +1,19 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-theme="light">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Календарь Уарза</title>
   <meta name="description" content="Уарзианский календарь: 8 месяцев по 45 дней, 9-дневная неделя, выходные 1/5/9 и дни баланса. Григорианская дата рядом с каждой датой.">
-  <meta name="theme-color" content="#070910">
+  <meta name="theme-color" content="#f4efe4">
+  <script>
+    try {
+      document.documentElement.dataset.theme =
+        localStorage.getItem("uarza.theme") === "dark" ? "dark" : "light";
+    } catch (e) {}
+  </script>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0e18'/%3E%3Cpath d='M32 10l4.6 14.2L51 29l-14.4 4.8L32 48l-4.6-14.2L13 29l14.4-4.8z' fill='%23d8b462'/%3E%3C/svg%3E">
-  <link rel="stylesheet" href="styles.css?v=20261129">
+  <link rel="stylesheet" href="styles.css?v=20261130">
 </head>
 <body>
   <div class="backdrop" aria-hidden="true"></div>
@@ -22,14 +28,14 @@
       <mask id="moon-mask-6"><rect width="20" height="20" fill="#fff"/><circle cx="16.5" cy="10" r="8" fill="#000"/></mask>
       <mask id="moon-mask-7"><rect width="20" height="20" fill="#fff"/><circle cx="12.5" cy="10" r="8" fill="#000"/></mask>
 
-      <g id="moon-0"><circle cx="10" cy="10" r="8" fill="#cfd6ea" mask="url(#moon-mask-0)"/><circle cx="10" cy="10" r="8" fill="none" stroke="#5a6478" stroke-width="1"/></g>
-      <g id="moon-1"><circle cx="10" cy="10" r="8" fill="#cfd6ea" mask="url(#moon-mask-1)"/><circle cx="10" cy="10" r="8" fill="none" stroke="#5a6478" stroke-width="1"/></g>
-      <g id="moon-2"><circle cx="10" cy="10" r="8" fill="#cfd6ea" mask="url(#moon-mask-2)"/><circle cx="10" cy="10" r="8" fill="none" stroke="#5a6478" stroke-width="1"/></g>
-      <g id="moon-3"><circle cx="10" cy="10" r="8" fill="#cfd6ea" mask="url(#moon-mask-3)"/><circle cx="10" cy="10" r="8" fill="none" stroke="#5a6478" stroke-width="1"/></g>
-      <g id="moon-4"><circle cx="10" cy="10" r="8" fill="#cfd6ea"/><circle cx="10" cy="10" r="8" fill="none" stroke="#5a6478" stroke-width="1"/></g>
-      <g id="moon-5"><circle cx="10" cy="10" r="8" fill="#cfd6ea" mask="url(#moon-mask-5)"/><circle cx="10" cy="10" r="8" fill="none" stroke="#5a6478" stroke-width="1"/></g>
-      <g id="moon-6"><circle cx="10" cy="10" r="8" fill="#cfd6ea" mask="url(#moon-mask-6)"/><circle cx="10" cy="10" r="8" fill="none" stroke="#5a6478" stroke-width="1"/></g>
-      <g id="moon-7"><circle cx="10" cy="10" r="8" fill="#cfd6ea" mask="url(#moon-mask-7)"/><circle cx="10" cy="10" r="8" fill="none" stroke="#5a6478" stroke-width="1"/></g>
+      <g id="moon-0"><circle cx="10" cy="10" r="8" style="fill: var(--moon-fill, #cfd6ea)" mask="url(#moon-mask-0)"/><circle cx="10" cy="10" r="8" fill="none" style="stroke: var(--moon-line, #5a6478)" stroke-width="1"/></g>
+      <g id="moon-1"><circle cx="10" cy="10" r="8" style="fill: var(--moon-fill, #cfd6ea)" mask="url(#moon-mask-1)"/><circle cx="10" cy="10" r="8" fill="none" style="stroke: var(--moon-line, #5a6478)" stroke-width="1"/></g>
+      <g id="moon-2"><circle cx="10" cy="10" r="8" style="fill: var(--moon-fill, #cfd6ea)" mask="url(#moon-mask-2)"/><circle cx="10" cy="10" r="8" fill="none" style="stroke: var(--moon-line, #5a6478)" stroke-width="1"/></g>
+      <g id="moon-3"><circle cx="10" cy="10" r="8" style="fill: var(--moon-fill, #cfd6ea)" mask="url(#moon-mask-3)"/><circle cx="10" cy="10" r="8" fill="none" style="stroke: var(--moon-line, #5a6478)" stroke-width="1"/></g>
+      <g id="moon-4"><circle cx="10" cy="10" r="8" style="fill: var(--moon-fill, #cfd6ea)"/><circle cx="10" cy="10" r="8" fill="none" style="stroke: var(--moon-line, #5a6478)" stroke-width="1"/></g>
+      <g id="moon-5"><circle cx="10" cy="10" r="8" style="fill: var(--moon-fill, #cfd6ea)" mask="url(#moon-mask-5)"/><circle cx="10" cy="10" r="8" fill="none" style="stroke: var(--moon-line, #5a6478)" stroke-width="1"/></g>
+      <g id="moon-6"><circle cx="10" cy="10" r="8" style="fill: var(--moon-fill, #cfd6ea)" mask="url(#moon-mask-6)"/><circle cx="10" cy="10" r="8" fill="none" style="stroke: var(--moon-line, #5a6478)" stroke-width="1"/></g>
+      <g id="moon-7"><circle cx="10" cy="10" r="8" style="fill: var(--moon-fill, #cfd6ea)" mask="url(#moon-mask-7)"/><circle cx="10" cy="10" r="8" fill="none" style="stroke: var(--moon-line, #5a6478)" stroke-width="1"/></g>
     </defs>
   </svg>
 
@@ -63,6 +69,14 @@
           <button type="button" class="tool-btn" id="moon-btn" aria-pressed="false" aria-label="Лунные фазы" data-i18n-title="moonTitle" data-icon="☾"></button>
           <button type="button" class="tool-btn" id="sun-btn" aria-pressed="false" aria-label="Долгота дня" data-i18n-title="sunTitle" data-icon="☼"></button>
         </div>
+
+        <button type="button" class="tool-btn theme-btn" id="theme-btn" aria-label="Тёмная тема" title="Тёмная тема">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+            <path d="M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.2 1.2 2h4.8c.1-.8.5-1.5 1.2-2A6 6 0 0 0 12 3Z"/>
+            <path d="M9.5 18h5"/>
+            <path d="M10.5 21h3"/>
+          </svg>
+        </button>
 
         <div class="lang-switch" role="group" aria-label="Язык" data-i18n-aria="langLabel">
           <button type="button" data-lang="ru" aria-pressed="true">РУС</button>
@@ -160,6 +174,6 @@
     </div>
   </dialog>
 
-  <script type="module" src="app.js?v=20261129"></script>
+  <script type="module" src="app.js?v=20261130"></script>
 </body>
 </html>
